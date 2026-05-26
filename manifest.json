@@ -1,0 +1,23 @@
+{
+  "name": "Word Card Archive",
+  "short_name": "말씀카드",
+  "description": "나만의 말씀 카드 아카이빙",
+  "start_url": "/Bib/bib_mem_new.html",
+  "scope": "/Bib/",
+  "display": "standalone",
+  "background_color": "#f4f8f4",
+  "theme_color": "#3a7d44",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/Bib/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Bib/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
