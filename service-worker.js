@@ -1,6 +1,6 @@
 const CACHE_NAME = 'word-card-v1';
 const urlsToCache = [
-  '/Bib/bib_mem_new.html',
+  '/Bib/bib_mem_new2.html',
   '/Bib/krv_eng/matthew.json',
   '/Bib/krv_eng/mark.json',
   '/Bib/krv_eng/luke.json',
@@ -22,6 +22,6 @@ self.addEventListener('fetch', event => {
           return fetchResponse;
         });
       });
-    }).catch(() => caches.match('/Bib/bib_mem_new.html'))
+    }).catch(() => caches.match('/Bib/bib_mem_new2.html'))
   );
 });
