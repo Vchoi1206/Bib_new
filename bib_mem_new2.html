@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Card Archive</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/Bib_new/manifest.json">
+    <meta name="theme-color" content="#3a7d44">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="말씀카드">
+    <link rel="apple-touch-icon" href="/Bib_new/icon-192.png">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        :root {
+            --cream: #f4f8f4;
+            --parchment: #e6f0e6;
+            --green: #3a7d44;
+            --green-pale: #c8e6c9;
+            --ink: #1a2e1a;
+            --ink-soft: #3d5c3d;
+            --ink-faint: #7a9c7a;
+            --border: #b2d0b2;
+            --white: #ffffff;
+            --red-soft: #c0392b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: var(--cream);
+            min-height: 100vh;
+            color: var(--ink);
+        }
+
+        header {
+            text-align: center;
+            padding: 32px 20px 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--white) 0%, var(--cream) 100%);
+        }
+
+        header h1 {
+            font-family: 'Noto Sans KR', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--green);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .container { max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--white);
+        }
+
+        .tab-btn {
+            flex: 1; padding: 12px 8px; border: none; background: var(--white);
+            cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+            font-size: 0.82rem; font-weight: 700; color: var(--ink-faint);
+            transition: all 0.2s; border-right: 1px solid var(--border);
+        }
+        .tab-btn:last-child { border-right: none; }
+        .tab-btn:hover { background: var(--parchment); color: var(--ink); }
+        .tab-btn.active { background: var(--green); color: var(--white); }
+
+        .tab-hint { font-size: 0.74rem; color: var(--ink-faint); margin-bottom: 16px; padding-left: 2px; }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card-box {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(58,125,68,0.07);
+        }
+
+        .testament-toggle {
+            display: flex; margin-bottom: 14px;
+            border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+        }
+
+        .testament-btn {
+            flex: 1; padding: 9px; border: none; background: var(--white);
+            cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+            font-size: 0.8rem; font-weight: 700; color: var(--ink-faint);
+            transition: all 0.2s; border-right: 1px solid var(--border);
+        }
+        .testament-btn:last-child { border-right: none; }
+        .testament-btn.active { background: var(--green-pale); color: var(--green); }
+
+        .row { display: flex; gap: 10px; margin-bottom: 12px; }
+        .row > * { flex: 1; }
+
+        select, input[type="number"], input[type="text"], textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+            border-radius: 7px; background: var(--cream);
+            font-family: 'Noto Sans KR', sans-serif; font-size: 0.85rem;
+            color: var(--ink); outline: none; transition: border-color 0.2s;
+        }
+        select:focus, input:focus, textarea:focus { border-color: var(--green); background: var(--white); }
+        input[type="number"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        label {
+            display: block; font-size: 0.74rem; font-weight: 500;
+            color: var(--ink-faint); letter-spacing: 0.05em;
+            margin-bottom: 5px; margin-top: 14px;
+        }
+        label:first-child { margin-top: 0; }
+        textarea { resize: vertical; line-height: 1.8; font-family: 'Noto Serif KR', serif; }
+
+        .verse-range-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 12px; }
+        .verse-range-row > .verse-input { flex: 1; }
+
+        .whole-chapter-wrap {
+            display: flex; align-items: center; gap: 6px;
+            padding-bottom: 10px; white-space: nowrap; cursor: pointer;
+        }
+        .whole-chapter-wrap input[type="checkbox"] {
+            width: 16px; height: 16px; accent-color: var(--green); cursor: pointer;
+        }
+        .whole-chapter-wrap span { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); }
+
+        /* 키워드 태그 입력 */
+        .keyword-wrap { position: relative; }
+        .keyword-tags {
+            display: flex; flex-wrap: wrap; gap: 6px; min-height: 38px;
+            padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px;
+            background: var(--cream); cursor: text; align-items: center; transition: border-color 0.2s;
+        }
+        .keyword-tags:focus-within { border-color: var(--green); background: var(--white); }
+        .kw-tag {
+            display: flex; align-items: center; gap: 4px; padding: 2px 8px;
+            background: var(--green-pale); border-radius: 12px;
+            font-size: 0.75rem; color: var(--green); font-weight: 600;
+        }
+        .kw-tag button { background: none; border: none; cursor: pointer; color: var(--green); font-size: 0.8rem; padding: 0; line-height: 1; }
+        .kw-tag-input {
+            border: none; background: transparent; outline: none;
+            font-size: 0.85rem; font-family: 'Noto Sans KR', sans-serif;
+            color: var(--ink); min-width: 80px; flex: 1; padding: 2px 0;
+        }
+        .kw-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: var(--white); border: 1px solid var(--border); border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(58,125,68,0.12); z-index: 100;
+            max-height: 180px; overflow-y: auto;
+        }
+        .kw-dropdown.show { display: block; }
+        .kw-dropdown-item {
+            padding: 9px 14px; font-size: 0.83rem; cursor: pointer;
+            color: var(--ink-soft); font-family: 'Noto Sans KR', sans-serif;
+            transition: background 0.15s; display: flex; align-items: center; gap: 8px;
+        }
+        .kw-dropdown-item:hover { background: var(--parchment); color: var(--green); }
+        .kw-dropdown-item.selected::after { content: "✓"; margin-left: auto; color: var(--green); font-weight: 700; }
+        .kw-dropdown-empty { padding: 10px 14px; font-size: 0.8rem; color: var(--ink-faint); }
+
+        /* Bible Viewer */
+        #bibleViewer { margin-top: 16px; max-height: 380px; overflow-y: auto; padding-right: 4px; }
+        #bibleViewer::-webkit-scrollbar { width: 4px; }
+        #bibleViewer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .verse-item {
+            display: flex; gap: 12px; padding: 8px 0;
+            border-bottom: 1px solid var(--parchment);
+            line-height: 1.8; font-size: 0.9rem; font-family: 'Noto Serif KR', serif;
+        }
+        .verse-item:last-child { border-bottom: none; }
+        .verse-num {
+            font-family: 'Noto Sans KR', sans-serif; font-size: 0.7rem;
+            color: var(--green); font-weight: 700; min-width: 22px; padding-top: 4px;
+        }
+
+        .btn {
+            display: block; width: 100%; padding: 13px; margin-top: 16px;
+            border: none; border-radius: 8px; font-family: 'Noto Sans KR', sans-serif;
+            font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--green); color: var(--white); }
+        .btn-primary:hover { background: #2e6335; }
+
+        /* 보관함 필터 */
+        .filter-section {
+            background: var(--white); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
+        }
+        .filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .filter-label { font-size: 0.73rem; font-weight: 700; color: var(--ink-faint); white-space: nowrap; letter-spacing: 0.04em; }
+        .filter-badges { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+        .filter-divider { width: 100%; height: 1px; background: var(--border); margin: 10px 0; }
+        .badge {
+            padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer;
+            border: 1px solid var(--border); background: var(--white); color: var(--ink-soft);
+            transition: all 0.2s; font-weight: 500; font-family: 'Noto Sans KR', sans-serif;
+        }
+        .badge:hover { background: var(--parchment); color: var(--green); }
+        .badge.active { background: var(--green); border-color: var(--green); color: var(--white); }
+
+        /* 보관함 툴바 */
+        .view-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; gap: 8px; }
+        .btn-toolbar {
+            padding: 7px 14px; border-radius: 7px; font-size: 0.78rem; font-weight: 700;
+            cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+            border: 1px solid var(--border); transition: all 0.2s; white-space: nowrap;
+        }
+        .btn-delete-mode { background: var(--white); color: var(--red-soft); border-color: #f5c6c2; }
+        .btn-delete-mode:hover { background: #fdf0ef; }
+        .btn-delete-confirm { background: var(--red-soft); color: var(--white); border-color: var(--red-soft); display: none; }
+        .btn-delete-confirm:hover { background: #a93226; }
+        .btn-cancel-del { background: var(--white); color: var(--ink-soft); display: none; }
+        .btn-cancel-del:hover { background: var(--parchment); }
+
+        /* Word Card */
+        .word-card {
+            display: flex; gap: 12px; align-items: flex-start;
+            background: var(--white); border: 1px solid var(--border);
+            border-left: 4px solid var(--green); border-radius: 10px;
+            padding: 14px 20px; margin-bottom: 14px; transition: box-shadow 0.2s;
+        }
+        .word-card:hover { box-shadow: 0 4px 16px rgba(58,125,68,0.10); }
+        .word-card.selected { border-color: var(--red-soft); border-left-color: var(--red-soft); background: #fff8f8; }
+
+        .card-checkbox-wrap { display: none; align-items: center; padding-top: 3px; flex-shrink: 0; }
+        .card-checkbox-wrap input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--red-soft); cursor: pointer; }
+        .delete-mode .card-checkbox-wrap { display: flex; }
+
+        .card-content { flex: 1; min-width: 0; }
+
+        .word-card-header {
+            display: flex; align-items: flex-start;
+            justify-content: space-between; gap: 10px;
+        }
+
+        .header-left { flex: 1; min-width: 0; }
+
+        .word-card-ref {
+            font-family: 'Noto Sans KR', sans-serif; font-size: 0.74rem;
+            font-weight: 700; color: var(--green); letter-spacing: 0.07em;
+            margin-bottom: 5px;
+        }
+
+        .card-kw-preview { display: flex; flex-wrap: wrap; gap: 5px; }
+
+        .kw-chip {
+            padding: 2px 8px; background: var(--parchment); border-radius: 10px;
+            font-size: 0.7rem; color: var(--ink-soft); font-weight: 500;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .header-right {
+            display: flex; flex-direction: column; align-items: flex-end;
+            gap: 5px; flex-shrink: 0;
+        }
+
+        .card-date {
+            font-family: 'Noto Sans KR', sans-serif; font-size: 0.7rem; color: var(--ink-faint);
+        }
+
+        .header-btns { display: flex; gap: 5px; }
+
+        .toggle-btn {
+            background: none; border: 1px solid var(--border); cursor: pointer;
+            color: var(--ink-faint); font-size: 0.7rem; font-family: 'Noto Sans KR', sans-serif;
+            font-weight: 600; padding: 3px 7px; border-radius: 5px;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .toggle-btn:hover { background: var(--parchment); color: var(--green); border-color: var(--green); }
+        .toggle-btn.open { background: var(--green-pale); color: var(--green); border-color: var(--green); }
+        .toggle-btn.hidden { display: none; }
+
+        .word-card-text-wrap {
+            overflow: hidden; max-height: 0; opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+            margin-top: 0;
+        }
+        .word-card-text-wrap.open { max-height: 2000px; opacity: 1; margin-top: 10px; }
+
+        .word-card-text {
+            font-family: 'Noto Serif KR', serif; font-size: 0.9rem;
+            line-height: 1.85; color: var(--ink); white-space: pre-wrap;
+            padding: 10px 12px; background: var(--cream); border-radius: 7px;
+        }
+
+        .word-card-memo-wrap {
+            overflow: hidden; max-height: 2000px; opacity: 1;
+            transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+            margin-top: 10px;
+        }
+        .word-card-memo-wrap.closed { max-height: 0; opacity: 0; margin-top: 0; }
+
+        .word-card-memo {
+            padding: 10px 12px; background: var(--cream); border-radius: 6px;
+            font-family: 'Noto Serif KR', serif; font-size: 0.82rem;
+            color: var(--ink-soft); line-height: 1.7; white-space: pre-wrap;
+        }
+        .word-card-memo::before { content: "✦ "; color: var(--green); font-size: 0.7rem; }
+
+        .card-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+
+        .btn-edit {
+            padding: 5px 14px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer;
+            font-family: 'Noto Sans KR', sans-serif; background: var(--parchment);
+            color: var(--ink-soft); transition: all 0.2s;
+        }
+        .btn-edit:hover { background: var(--green-pale); color: var(--green); }
+
+        .edit-form { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+        .btn-save, .btn-cancel-edit {
+            padding: 5px 14px; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+            cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+            border: 1px solid var(--border); transition: all 0.2s;
+        }
+        .btn-save { background: var(--green); color: var(--white); border-color: var(--green); }
+        .btn-save:hover { background: #2e6335; }
+        .btn-cancel-edit { background: var(--white); color: var(--ink-soft); }
+        .btn-cancel-edit:hover { background: var(--parchment); }
+
+        .empty-state { text-align: center; padding: 48px 0; color: var(--ink-faint); font-size: 0.85rem; line-height: 2; }
+        .status-msg { text-align: center; padding: 32px 0; color: var(--ink-faint); font-size: 0.85rem; }
+        .status-err { color: var(--red-soft); }
+
+        .toast {
+            position: fixed; bottom: 28px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--ink); color: var(--white); padding: 11px 24px;
+            border-radius: 24px; font-size: 0.83rem; font-family: 'Noto Sans KR', sans-serif;
+            opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 999;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<header><h1>Word Card Archive</h1></header>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('read-panel', this)">📖 성경 열람</button>
+        <button class="tab-btn" onclick="switchTab('create-panel', this)">✍️ 카드 생성</button>
+        <button class="tab-btn" onclick="switchTab('view-panel', this)">🗂️ 보관함</button>
+    </div>
+
+    <!-- 성경 열람 -->
+    <div id="read-panel" class="panel active">
+        <p class="tab-hint">성경책과 장을 선택하면 본문이 표시됩니다.</p>
+        <div class="card-box">
+            <div class="testament-toggle">
+                <button class="testament-btn active" onclick="switchTestament('ot', this)">구약</button>
+                <button class="testament-btn" onclick="switchTestament('nt', this)">신약</button>
+            </div>
+            <div class="row">
+                <div><label>성경책</label><select id="readBook" onchange="updateChapters('readBook','readChapter'); loadBibleVerses();"></select></div>
+                <div><label>장</label><select id="readChapter" onchange="loadBibleVerses()"></select></div>
+            </div>
+            <div id="bibleViewer"><div class="status-msg">성경책과 장을 선택해 주세요.</div></div>
+        </div>
+    </div>
+
+    <!-- 카드 생성 -->
+    <div id="create-panel" class="panel">
+        <p class="tab-hint">말씀 범위를 선택하고 묵상을 기록해 카드로 저장하세요.</p>
+        <div class="card-box">
+            <div class="testament-toggle">
+                <button class="testament-btn active" onclick="switchTestamentCard('ot', this)">구약</button>
+                <button class="testament-btn" onclick="switchTestamentCard('nt', this)">신약</button>
+            </div>
+            <div class="row">
+                <div><label>성경책</label><select id="cardBook" onchange="updateChapters('cardBook','cardChapter');"></select></div>
+                <div><label>장</label><select id="cardChapter"></select></div>
+            </div>
+            <div class="verse-range-row">
+                <div class="verse-input"><label>시작 절</label><input type="number" id="startVerse" placeholder="예: 1" min="1"></div>
+                <div class="verse-input"><label>끝 절</label><input type="number" id="endVerse" placeholder="예: 5" min="1"></div>
+                <label class="whole-chapter-wrap">
+                    <input type="checkbox" id="wholeChapter" onchange="toggleWholeChapter(this)">
+                    <span>장 전체</span>
+                </label>
+            </div>
+            <button class="btn btn-primary" style="margin-top:4px;" onclick="loadCardPreview()">본문 불러오기</button>
+            <label>본문</label>
+            <textarea id="cardText" rows="8" placeholder="위에서 불러오거나 직접 입력하세요."></textarea>
+            <label>키워드</label>
+            <div class="keyword-wrap" id="keywordWrap">
+                <div class="keyword-tags" id="keywordTags" onclick="focusKwInput()">
+                    <input type="text" class="kw-tag-input" id="kwInput"
+                        placeholder="입력 또는 선택"
+                        oninput="onKwInput()"
+                        onkeydown="onKwKeydown(event)"
+                        onfocus="showKwDropdown()"
+                        autocomplete="off">
+                </div>
+                <div class="kw-dropdown" id="kwDropdown"></div>
+            </div>
+            <label>묵상 기록</label>
+            <textarea id="cardMemo" rows="3" placeholder="오늘 이 말씀에서 받은 은혜를 기록해 보세요."></textarea>
+            <button class="btn btn-primary" onclick="saveWordCard()">💝 저장하기</button>
+        </div>
+    </div>
+
+    <!-- 보관함 -->
+    <div id="view-panel" class="panel">
+        <p class="tab-hint">저장된 말씀 카드를 키워드 또는 성경책으로 필터링할 수 있습니다.</p>
+        <div class="filter-section">
+            <div class="filter-row">
+                <span class="filter-label"># 키워드</span>
+                <div class="filter-badges" id="kwFilterBadges"></div>
+            </div>
+            <div class="filter-divider"></div>
+            <div class="filter-row">
+                <span class="filter-label">📖 성경책</span>
+                <div class="filter-badges" id="bookFilterBadges"></div>
+            </div>
+        </div>
+        <div class="view-toolbar">
+            <button class="btn-toolbar btn-delete-mode" id="btnDeleteMode" onclick="toggleDeleteMode()">🗑️ 삭제</button>
+            <button class="btn-toolbar btn-delete-confirm" id="btnDeleteConfirm" onclick="confirmDelete()">삭제 확인</button>
+            <button class="btn-toolbar btn-cancel-del" id="btnCancelDel" onclick="cancelDeleteMode()">취소</button>
+        </div>
+        <div id="savedCardsDisplay"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const otBooks = [
+        { id:"gen", name:"창세기",       file:"genesis",       chapters:50  },
+        { id:"exo", name:"출애굽기",     file:"exodus",        chapters:40  },
+        { id:"lev", name:"레위기",       file:"leviticus",     chapters:27  },
+        { id:"num", name:"민수기",       file:"numbers",       chapters:36  },
+        { id:"deu", name:"신명기",       file:"deuteronomy",   chapters:34  },
+        { id:"jos", name:"여호수아",     file:"joshua",        chapters:24  },
+        { id:"jdg", name:"사사기",       file:"judges",        chapters:21  },
+        { id:"rut", name:"룻기",         file:"ruth",          chapters:4   },
+        { id:"1sa", name:"사무엘상",     file:"1samuel",       chapters:31  },
+        { id:"2sa", name:"사무엘하",     file:"2samuel",       chapters:24  },
+        { id:"1ki", name:"열왕기상",     file:"1kings",        chapters:22  },
+        { id:"2ki", name:"열왕기하",     file:"2kings",        chapters:25  },
+        { id:"1ch", name:"역대상",       file:"1chronicles",   chapters:29  },
+        { id:"2ch", name:"역대하",       file:"2chronicles",   chapters:36  },
+        { id:"ezr", name:"에스라",       file:"ezra",          chapters:10  },
+        { id:"neh", name:"느헤미야",     file:"nehemiah",      chapters:13  },
+        { id:"est", name:"에스더",       file:"esther",        chapters:10  },
+        { id:"job", name:"욥기",         file:"job",           chapters:42  },
+        { id:"psa", name:"시편",         file:"psalms",        chapters:150 },
+        { id:"pro", name:"잠언",         file:"proverbs",      chapters:31  },
+        { id:"ecc", name:"전도서",       file:"ecclesiastes",  chapters:12  },
+        { id:"sng", name:"아가",         file:"song",          chapters:8   },
+        { id:"isa", name:"이사야",       file:"isaiah",        chapters:66  },
+        { id:"jer", name:"예레미야",     file:"jeremiah",      chapters:52  },
+        { id:"lam", name:"예레미야애가", file:"lamentations",  chapters:5   },
+        { id:"ezk", name:"에스겔",       file:"ezekiel",       chapters:48  },
+        { id:"dan", name:"다니엘",       file:"daniel",        chapters:12  },
+        { id:"hos", name:"호세아",       file:"hosea",         chapters:14  },
+        { id:"jol", name:"요엘",         file:"joel",          chapters:3   },
+        { id:"amo", name:"아모스",       file:"amos",          chapters:9   },
+        { id:"oba", name:"오바댜",       file:"obadiah",       chapters:1   },
+        { id:"jon", name:"요나",         file:"jonah",         chapters:4   },
+        { id:"mic", name:"미가",         file:"micah",         chapters:7   },
+        { id:"nam", name:"나훔",         file:"nahum",         chapters:3   },
+        { id:"hab", name:"하박국",       file:"habakkuk",      chapters:3   },
+        { id:"zep", name:"스바냐",       file:"zephaniah",     chapters:3   },
+        { id:"hag", name:"학개",         file:"haggai",        chapters:2   },
+        { id:"zec", name:"스가랴",       file:"zechariah",     chapters:14  },
+        { id:"mal", name:"말라기",       file:"malachi",       chapters:4   },
+    ];
+
+    const ntBooks = [
+        { id:"mat", name:"마태복음",       file:"matthew",        chapters:28 },
+        { id:"mrk", name:"마가복음",       file:"mark",           chapters:16 },
+        { id:"luk", name:"누가복음",       file:"luke",           chapters:24 },
+        { id:"jhn", name:"요한복음",       file:"john",           chapters:21 },
+        { id:"act", name:"사도행전",       file:"acts",           chapters:28 },
+        { id:"rom", name:"로마서",         file:"romans",         chapters:16 },
+        { id:"1co", name:"고린도전서",     file:"1corinthians",   chapters:16 },
+        { id:"2co", name:"고린도후서",     file:"2corinthians",   chapters:13 },
+        { id:"gal", name:"갈라디아서",     file:"galatians",      chapters:6  },
+        { id:"eph", name:"에베소서",       file:"ephesians",      chapters:6  },
+        { id:"php", name:"빌립보서",       file:"philippians",    chapters:4  },
+        { id:"col", name:"골로새서",       file:"colossians",     chapters:4  },
+        { id:"1th", name:"데살로니가전서", file:"1thessalonians", chapters:5  },
+        { id:"2th", name:"데살로니가후서", file:"2thessalonians", chapters:3  },
+        { id:"1ti", name:"디모데전서",     file:"1timothy",       chapters:6  },
+        { id:"2ti", name:"디모데후서",     file:"2timothy",       chapters:4  },
+        { id:"tit", name:"디도서",         file:"titus",          chapters:3  },
+        { id:"phm", name:"빌레몬서",       file:"philemon",       chapters:1  },
+        { id:"heb", name:"히브리서",       file:"hebrews",        chapters:13 },
+        { id:"jas", name:"야고보서",       file:"james",          chapters:5  },
+        { id:"1pe", name:"베드로전서",     file:"1peter",         chapters:5  },
+        { id:"2pe", name:"베드로후서",     file:"2peter",         chapters:3  },
+        { id:"1jn", name:"요한일서",       file:"1john",          chapters:5  },
+        { id:"2jn", name:"요한이서",       file:"2john",          chapters:1  },
+        { id:"3jn", name:"요한삼서",       file:"3john",          chapters:1  },
+        { id:"jud", name:"유다서",         file:"jude",           chapters:1  },
+        { id:"rev", name:"요한계시록",     file:"revelation",     chapters:22 },
+    ];
+
+    function switchTestament(type, btn) {
+        document.querySelectorAll('#read-panel .testament-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        populateBookSelect('readBook', type === 'ot' ? otBooks : ntBooks);
+        updateChapters('readBook', 'readChapter');
+        loadBibleVerses();
+    }
+
+    function switchTestamentCard(type, btn) {
+        document.querySelectorAll('#create-panel .testament-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        populateBookSelect('cardBook', type === 'ot' ? otBooks : ntBooks);
+        updateChapters('cardBook', 'cardChapter');
+    }
+
+    function populateBookSelect(selectId, books) {
+        const sel = document.getElementById(selectId);
+        sel.innerHTML = "";
+        books.forEach(b => {
+            const opt = document.createElement("option");
+            opt.value = b.id; opt.textContent = b.name;
+            sel.appendChild(opt);
+        });
+    }
+
+    function getBook(bookId) { return [...otBooks, ...ntBooks].find(b => b.id === bookId); }
+
+    async function getBibleData(bookId) {
+        const book = getBook(bookId);
+        if (!book) throw new Error(`책 ID를 찾을 수 없음: ${bookId}`);
+        const res = await fetch(`./krv_eng/${book.file}.json`);
+        if (!res.ok) throw new Error(`파일 로드 실패 (${res.status}): ./krv_eng/${book.file}.json`);
+        return await res.json();
+    }
+
+    function toggleWholeChapter(checkbox) {
+        const s = document.getElementById("startVerse");
+        const e = document.getElementById("endVerse");
+        s.disabled = e.disabled = checkbox.checked;
+        if (checkbox.checked) { s.value = ""; e.value = ""; }
+    }
+
+    async function loadBibleVerses() {
+        const bookId  = document.getElementById("readBook").value;
+        const chapter = document.getElementById("readChapter").value;
+        const viewer  = document.getElementById("bibleViewer");
+        viewer.innerHTML = '<div class="status-msg">📖 말씀을 불러오는 중입니다...</div>';
+        try {
+            const data = await getBibleData(bookId);
+            let verses = [];
+            if (data.chapters && Array.isArray(data.chapters)) {
+                const tgt = data.chapters.find(c => c.chapter == chapter);
+                if (tgt && tgt.verses) verses = tgt.verses.map(v => ({ verse: v.verse, text: v.text }));
+            } else if (Array.isArray(data)) {
+                verses = data.filter(v => v.chapter == chapter);
+            }
+            if (verses.length === 0) { viewer.innerHTML = `<div class="status-msg status-err">⚠️ ${chapter}장 데이터를 불러올 수 없습니다.</div>`; return; }
+            viewer.innerHTML = "";
+            verses.forEach(v => {
+                const div = document.createElement("div");
+                div.className = "verse-item";
+                div.innerHTML = `<span class="verse-num">${v.verse}</span><span>${v.text}</span>`;
+                viewer.appendChild(div);
+            });
+        } catch (err) {
+            viewer.innerHTML = `<div class="status-msg status-err">⚠️ 오류: ${err.message}</div>`;
+        }
+    }
+
+    async function loadCardPreview() {
+        const bookId   = document.getElementById("cardBook").value;
+        const chapter  = document.getElementById("cardChapter").value;
+        const isWhole  = document.getElementById("wholeChapter").checked;
+        const start    = parseInt(document.getElementById("startVerse").value);
+        const end      = parseInt(document.getElementById("endVerse").value);
+        const textarea = document.getElementById("cardText");
+        if (!isWhole && (!start || !end)) { showToast("시작 절과 끝 절을 입력해 주세요."); return; }
+        if (!isWhole && start > end)      { showToast("시작 절이 끝 절보다 클 수 없어요."); return; }
+        textarea.value = "불러오는 중...";
+        try {
+            const data = await getBibleData(bookId);
+            let verses = [];
+            if (data.chapters && Array.isArray(data.chapters)) {
+                const tgt = data.chapters.find(c => c.chapter == chapter);
+                if (tgt && tgt.verses) verses = isWhole ? tgt.verses : tgt.verses.filter(v => v.verse >= start && v.verse <= end);
+            } else if (Array.isArray(data)) {
+                verses = isWhole ? data.filter(v => v.chapter == chapter) : data.filter(v => v.chapter == chapter && v.verse >= start && v.verse <= end);
+            }
+            if (verses.length === 0) { textarea.value = ""; showToast("해당 범위의 말씀을 찾을 수 없어요."); return; }
+            textarea.value = verses.map(v => `${v.verse}절  ${v.text}`).join("\n");
+        } catch (err) { textarea.value = ""; showToast(`오류: ${err.message}`); }
+    }
+
+    // 키워드 태그
+    let selectedKeywords = [];
+
+    function getAllKeywords() {
+        const all = new Set();
+        getSavedCards().forEach(c => {
+            if (Array.isArray(c.keywords)) c.keywords.forEach(k => all.add(k));
+            else if (c.keyword) c.keyword.split(',').map(k => k.trim()).filter(Boolean).forEach(k => all.add(k));
+        });
+        return [...all];
+    }
+
+    function renderKwTags() {
+        const container = document.getElementById("keywordTags");
+        const input     = document.getElementById("kwInput");
+        container.querySelectorAll('.kw-tag').forEach(el => el.remove());
+        selectedKeywords.forEach(kw => {
+            const tag = document.createElement("div");
+            tag.className = "kw-tag";
+            tag.innerHTML = `<span>${kw}</span><button type="button" onclick="removeKwTag('${kw}')">×</button>`;
+            container.insertBefore(tag, input);
+        });
+    }
+
+    function addKwTag(kw) {
+        kw = kw.trim();
+        if (!kw || selectedKeywords.includes(kw)) return;
+        selectedKeywords.push(kw);
+        renderKwTags();
+        document.getElementById("kwInput").value = "";
+        renderKwDropdown("");
+    }
+
+    function removeKwTag(kw) {
+        selectedKeywords = selectedKeywords.filter(k => k !== kw);
+        renderKwTags();
+        renderKwDropdown(document.getElementById("kwInput").value);
+    }
+
+    function focusKwInput() { document.getElementById("kwInput").focus(); }
+    function onKwInput() { renderKwDropdown(document.getElementById("kwInput").value); }
+
+    function onKwKeydown(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const val = document.getElementById("kwInput").value.trim();
+            if (val) addKwTag(val);
+        }
+        if (e.key === 'Backspace' && !document.getElementById("kwInput").value && selectedKeywords.length > 0) {
+            removeKwTag(selectedKeywords[selectedKeywords.length - 1]);
+        }
+    }
+
+    function showKwDropdown() { renderKwDropdown(document.getElementById("kwInput").value); }
+
+    function renderKwDropdown(query) {
+        const dropdown = document.getElementById("kwDropdown");
+        const all      = getAllKeywords();
+        const filtered = all.filter(k => k.includes(query));
+        if (filtered.length === 0 && !query) { dropdown.classList.remove('show'); return; }
+        dropdown.classList.add('show');
+        if (filtered.length === 0) {
+            dropdown.innerHTML = query
+                ? `<div class="kw-dropdown-item" onclick="addKwTag('${query}')">+ "${query}" 추가</div>`
+                : `<div class="kw-dropdown-empty">저장된 키워드가 없어요.</div>`;
+            return;
+        }
+        dropdown.innerHTML = filtered.map(k =>
+            `<div class="kw-dropdown-item ${selectedKeywords.includes(k) ? 'selected' : ''}" onclick="addKwTag('${k}')">${k}</div>`
+        ).join('');
+        if (query && !filtered.includes(query)) {
+            dropdown.innerHTML += `<div class="kw-dropdown-item" onclick="addKwTag('${query}')">+ "${query}" 추가</div>`;
+        }
+    }
+
+    document.addEventListener('click', e => {
+        if (!document.getElementById('keywordWrap').contains(e.target)) {
+            document.getElementById('kwDropdown').classList.remove('show');
+        }
+    });
+
+    function saveWordCard() {
+        const bookId  = document.getElementById("cardBook").value;
+        const chapter = document.getElementById("cardChapter").value;
+        const isWhole = document.getElementById("wholeChapter").checked;
+        const start   = document.getElementById("startVerse").value;
+        const end     = document.getElementById("endVerse").value;
+        const text    = document.getElementById("cardText").value.trim();
+        const memo    = document.getElementById("cardMemo").value.trim();
+        const rawInput = document.getElementById("kwInput").value.trim();
+        if (rawInput) addKwTag(rawInput);
+        const keywords = [...selectedKeywords];
+        if (!text) { showToast("본문을 먼저 불러와 주세요."); return; }
+        const book = getBook(bookId);
+        const ref  = isWhole ? `${book.name} ${chapter}장 전체` : `${book.name} ${chapter}장 ${start}-${end}절`;
+        const saved = getSavedCards();
+        saved.push({ ref, bookName: book.name, text, keywords, memo, date: new Date().toLocaleDateString("ko-KR") });
+        localStorage.setItem("wordCards", JSON.stringify(saved));
+        document.getElementById("cardText").value       = "";
+        document.getElementById("kwInput").value        = "";
+        document.getElementById("cardMemo").value       = "";
+        document.getElementById("startVerse").value     = "";
+        document.getElementById("endVerse").value       = "";
+        document.getElementById("wholeChapter").checked = false;
+        document.getElementById("startVerse").disabled  = false;
+        document.getElementById("endVerse").disabled    = false;
+        selectedKeywords = [];
+        renderKwTags();
+        showToast("💝 말씀 카드가 저장되었어요!");
+    }
+
+    function getSavedCards() {
+        try { return JSON.parse(localStorage.getItem("wordCards")) || []; }
+        catch { return []; }
+    }
+
+    // 보관함 필터
+    let activeKeywords = [];
+    let activeBook     = null;
+
+    function toggleKwFilter(kw) {
+        activeKeywords = activeKeywords.includes(kw) ? activeKeywords.filter(k => k !== kw) : [...activeKeywords, kw];
+        renderCards();
+    }
+
+    function toggleBookFilter(bookName) {
+        activeBook = activeBook === bookName ? null : bookName;
+        renderCards();
+    }
+
+    function buildFilters(cards) {
+        const kwSet = new Set();
+        cards.forEach(c => {
+            if (Array.isArray(c.keywords)) c.keywords.forEach(k => kwSet.add(k));
+            else if (c.keyword) c.keyword.split(',').map(k => k.trim()).filter(Boolean).forEach(k => kwSet.add(k));
+        });
+        document.getElementById("kwFilterBadges").innerHTML = kwSet.size === 0
+            ? `<span style="font-size:0.75rem;color:var(--ink-faint);">없음</span>`
+            : [...kwSet].map(kw => `<span class="badge ${activeKeywords.includes(kw) ? 'active' : ''}" onclick="toggleKwFilter('${kw}')">${kw}</span>`).join('');
+
+        const bookSet = new Set(cards.map(c => c.bookName || c.ref?.split(' ')[0]).filter(Boolean));
+        document.getElementById("bookFilterBadges").innerHTML = bookSet.size === 0
+            ? `<span style="font-size:0.75rem;color:var(--ink-faint);">없음</span>`
+            : [...bookSet].map(bn => `<span class="badge ${activeBook === bn ? 'active' : ''}" onclick="toggleBookFilter('${bn}')">${bn}</span>`).join('');
+    }
+
+    // 삭제 모드
+    let isDeleteMode = false;
+
+    function toggleDeleteMode() {
+        isDeleteMode = true;
+        document.getElementById("btnDeleteMode").style.display    = "none";
+        document.getElementById("btnDeleteConfirm").style.display = "inline-block";
+        document.getElementById("btnCancelDel").style.display     = "inline-block";
+        document.getElementById("savedCardsDisplay").classList.add("delete-mode");
+    }
+
+    function cancelDeleteMode() {
+        isDeleteMode = false;
+        document.getElementById("btnDeleteMode").style.display    = "inline-block";
+        document.getElementById("btnDeleteConfirm").style.display = "none";
+        document.getElementById("btnCancelDel").style.display     = "none";
+        document.getElementById("savedCardsDisplay").classList.remove("delete-mode");
+        document.querySelectorAll('.card-check').forEach(cb => { cb.checked = false; });
+        document.querySelectorAll('.word-card').forEach(c => c.classList.remove('selected'));
+    }
+
+    function confirmDelete() {
+        const checked = [...document.querySelectorAll('.card-check:checked')];
+        if (checked.length === 0) { showToast("삭제할 카드를 선택해 주세요."); return; }
+        if (!confirm(`선택한 ${checked.length}개의 카드를 삭제할까요?`)) return;
+        const toDelete = new Set(checked.map(cb => parseInt(cb.dataset.index)));
+        const cards = getSavedCards().filter((_, i) => !toDelete.has(i));
+        localStorage.setItem("wordCards", JSON.stringify(cards));
+        cancelDeleteMode();
+        renderCards();
+        showToast(`${toDelete.size}개의 카드가 삭제되었어요.`);
+    }
+
+    function onCardCheck(index, checked) {
+        const card = document.getElementById(`card-${index}`);
+        if (checked) card.classList.add('selected');
+        else card.classList.remove('selected');
+    }
+
+    function toggleText(index) {
+        const wrap = document.getElementById(`text-${index}`);
+        const btn  = document.getElementById(`tbtn-${index}`);
+        const isOpen = wrap.classList.toggle('open');
+        btn.textContent = isOpen ? '▲ 본문' : '▼ 본문';
+        btn.classList.toggle('open', isOpen);
+    }
+
+    function toggleMemo(index) {
+        const wrap = document.getElementById(`memo-${index}`);
+        const btn  = document.getElementById(`mbtn-${index}`);
+        const isClosed = wrap.classList.toggle('closed');
+        btn.textContent = isClosed ? '▼ 묵상' : '▲ 묵상';
+        btn.classList.toggle('open', !isClosed);
+    }
+
+    function renderCards() {
+        const cards   = getSavedCards();
+        const display = document.getElementById("savedCardsDisplay");
+
+        buildFilters(cards);
+
+        let filtered = [...cards];
+        if (activeKeywords.length > 0) {
+            filtered = filtered.filter(c => {
+                const kws = Array.isArray(c.keywords) ? c.keywords : (c.keyword || '').split(',').map(k => k.trim()).filter(Boolean);
+                return activeKeywords.every(ak => kws.includes(ak));
+            });
+        }
+        if (activeBook) {
+            filtered = filtered.filter(c => (c.bookName || c.ref?.split(' ')[0]) === activeBook);
+        }
+
+        if (filtered.length === 0) {
+            display.innerHTML = `<div class="empty-state">조건에 맞는 카드가 없어요.</div>`;
+            return;
+        }
+
+        display.innerHTML = [...filtered].reverse().map(c => {
+            const realIndex = cards.indexOf(c);
+            const kws = Array.isArray(c.keywords) ? c.keywords : (c.keyword || '').split(',').map(k => k.trim()).filter(Boolean);
+            const kwPreview = kws.length
+                ? `<div class="card-kw-preview">${kws.map(k => `<span class="kw-chip">${k}</span>`).join('')}</div>`
+                : '';
+            const memoBtn = c.memo
+                ? `<button class="toggle-btn open" id="mbtn-${realIndex}" onclick="toggleMemo(${realIndex})">▲ 묵상</button>`
+                : `<button class="toggle-btn hidden" id="mbtn-${realIndex}"></button>`;
+            const memoBody = c.memo
+                ? `<div class="word-card-memo-wrap" id="memo-${realIndex}"><div class="word-card-memo">${c.memo}</div></div>`
+                : `<div class="word-card-memo-wrap closed" id="memo-${realIndex}"></div>`;
+
+            return `
+                <div class="word-card" id="card-${realIndex}">
+                    <div class="card-checkbox-wrap">
+                        <input type="checkbox" class="card-check" data-index="${realIndex}" onchange="onCardCheck(${realIndex}, this.checked)">
+                    </div>
+                    <div class="card-content">
+                        <div class="word-card-header">
+                            <div class="header-left">
+                                <div class="word-card-ref">📖 ${c.ref}</div>
+                                ${kwPreview}
+                            </div>
+                            <div class="header-right">
+                                <span class="card-date">${c.date}</span>
+                                <div class="header-btns">
+                                    <button class="toggle-btn" id="tbtn-${realIndex}" onclick="toggleText(${realIndex})">▼ 본문</button>
+                                    ${memoBtn}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="word-card-text-wrap" id="text-${realIndex}">
+                            <div class="word-card-text">${c.text}</div>
+                        </div>
+                        ${memoBody}
+                        <div class="card-actions">
+                            <button class="btn-edit" onclick="startEdit(${realIndex})">✏️ 수정</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        if (isDeleteMode) display.classList.add("delete-mode");
+    }
+
+    function startEdit(index) {
+        const cards  = getSavedCards();
+        const c      = cards[index];
+        const cardEl = document.getElementById(`card-${index}`);
+        const kws    = Array.isArray(c.keywords) ? c.keywords : (c.keyword || '').split(',').map(k => k.trim()).filter(Boolean);
+        cardEl.innerHTML = `
+            <div class="card-content" style="width:100%;">
+                <div class="word-card-ref" style="margin-bottom:10px;">📖 ${c.ref} · ${c.date}</div>
+                <div class="edit-form">
+                    <textarea id="edit-text-${index}" rows="6">${c.text}</textarea>
+                    <input type="text" id="edit-keyword-${index}" value="${kws.join(', ')}" placeholder="키워드 (쉼표로 구분)">
+                    <textarea id="edit-memo-${index}" rows="2" placeholder="묵상 기록">${c.memo || ''}</textarea>
+                </div>
+                <div class="card-actions">
+                    <button class="btn-save" onclick="saveEdit(${index})">💾 저장</button>
+                    <button class="btn-cancel-edit" onclick="renderCards()">✕ 취소</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function saveEdit(index) {
+        const cards    = getSavedCards();
+        const kwRaw    = document.getElementById(`edit-keyword-${index}`).value;
+        const keywords = kwRaw.split(',').map(k => k.trim()).filter(Boolean);
+        cards[index].text     = document.getElementById(`edit-text-${index}`).value.trim();
+        cards[index].keywords = keywords;
+        cards[index].keyword  = keywords.join(', ');
+        cards[index].memo     = document.getElementById(`edit-memo-${index}`).value.trim();
+        localStorage.setItem("wordCards", JSON.stringify(cards));
+        renderCards();
+        showToast("카드가 수정되었어요.");
+    }
+
+    function switchTab(pId, btn) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(pId).classList.add('active');
+        btn.classList.add('active');
+        if (pId === 'view-panel') { cancelDeleteMode(); renderCards(); }
+    }
+
+    function updateChapters(bookSelectId, chapterSelectId) {
+        const book = getBook(document.getElementById(bookSelectId).value);
+        const sel  = document.getElementById(chapterSelectId);
+        sel.innerHTML = "";
+        for (let i = 1; i <= book.chapters; i++) sel.innerHTML += `<option value="${i}">${i}장</option>`;
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2600);
+    }
+
+    window.onload = () => {
+        populateBookSelect('readBook', otBooks);
+        populateBookSelect('cardBook', otBooks);
+        updateChapters('readBook', 'readChapter');
+        updateChapters('cardBook', 'cardChapter');
+        loadBibleVerses();
+    };
+</script>
+
+<!-- PWA Service Worker -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/Bib_new/service-worker.js')
+                .then(() => console.log('Service Worker 등록 완료'))
+                .catch(err => console.log('Service Worker 등록 실패:', err));
+        });
+    }
+</script>
+
+</body>
+</html>
