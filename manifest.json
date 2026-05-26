@@ -2,7 +2,7 @@
   "name": "Word Card Archive",
   "short_name": "말씀카드",
   "description": "나만의 말씀 카드 아카이빙",
-  "start_url": "/Bib_new/bib_mem_new.html",
+  "start_url": "/Bib_new/bib_mem_new2.html",
   "scope": "/Bib_new/",
   "display": "standalone",
   "background_color": "#f4f8f4",
