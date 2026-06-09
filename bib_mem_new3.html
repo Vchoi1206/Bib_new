@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>말씀카드 아카이브 - Bible Word Card</title>
+    <link rel="manifest" href="/Bib_new/manifest.json">
+    <meta name="theme-color" content="#2e7d32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="말씀카드">
+    <link rel="apple-touch-icon" href="/Bib_new/icon-192.png">
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        :root {
+            /* 모던 네이처 컬러 팔레트 */
+            --primary: #2e7d32; /* 메인 그린 */
+            --primary-dark: #1b5e20;
+            --primary-light: #e8f5e9;
+            --secondary: #fbc02d; /* 포인트 옐로우 */
+            
+            --bg-main: #f8faf8;
+            --bg-card: #ffffff;
+            
+            --text-main: #1a1c1a;
+            --text-soft: #424942;
+            --text-faint: #8a938a;
+            
+            --border: #e0e6e0;
+            --border-hover: #becbbe;
+            
+            --red-soft: #e53935;
+            
+            /* 그림자/둥글기 공통 스타일 */
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(46,125,50,0.08);
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* 기본 초기화 */
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+        body{font-family:'Noto Sans KR',sans-serif;background-color:var(--bg-main);color:var(--text-main);min-height:100vh;padding-bottom:100px;line-height:1.6;}
+        
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar {width: 6px; height: 6px;}
+        ::-webkit-scrollbar-track {background: transparent;}
+        ::-webkit-scrollbar-thumb {background: var(--border-hover); border-radius: 3px;}
+        ::-webkit-scrollbar-thumb:hover {background: var(--text-faint);}
+
+        /* 헤더 디자인 */
+        header{
+            text-align:center;padding:24px 20px;background:var(--bg-card);
+            border-bottom:1px solid var(--border);position:sticky;top:0;z-index:90;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        header h1{
+            font-size:1.3rem;font-weight:700;color:var(--primary);
+            letter-spacing:-0.02em;display:flex;align-items:center;justify-content:center;gap:8px;
+        }
+        header h1 .material-symbols-outlined { font-size: 1.5rem; font-variation-settings: 'FILL' 1; }
+
+        .container{max-width:680px;margin:0 auto;padding:20px 16px;}
+
+        /* 하단 탭 내비게이션 UX 변경 */
+        .tabs{
+            display:flex;position:fixed;bottom:0;left:0;right:0;
+            background:var(--bg-card);border-top:1px solid var(--border);
+            padding:10px 10px calc(10px + var(--safe-area-bottom));
+            z-index:100;box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+            justify-content: space-around;
+        }
+        .tab-btn{
+            flex: 1; max-width: 90px; padding: 8px 4px; border:none; background:transparent; cursor:pointer;
+            display:flex;flex-direction:column;align-items:center;gap:5px;
+            color:var(--text-faint);transition:all 0.2s ease;border-radius: var(--radius-sm);
+        }
+        .tab-btn .material-symbols-outlined {
+            font-size: 24px; font-variation-settings: 'FILL' 0, 'wght' 300;
+        }
+        .tab-btn span:not(.material-symbols-outlined) { font-size:0.75rem;font-weight:500; }
+        
+        .tab-btn:hover{ background-color: var(--primary-light); color: var(--primary); }
+        .tab-btn.active{ color:var(--primary); }
+        .tab-btn.active .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400; }
+
+        /* 판넬 공통 */
+        .panel{display:none; animation: fadeIn 0.3s ease;} 
+        .panel.active{display:block;}
+        @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+        
+        .tab-hint{
+            font-size:0.85rem;color:var(--text-soft);margin-bottom:20px;
+            padding: 12px 16px; background: var(--bg-card); border-radius: var(--radius-sm);
+            border: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+        }
+        .tab-hint .material-symbols-outlined { color: var(--secondary); font-size: 1.2rem; }
+
+        /* 카드 박스 기본 디자인 */
+        .card-box{
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:var(--radius-md);padding:20px;
+            box-shadow:var(--shadow-sm);margin-bottom: 20px;
+        }
+        .card-box-title {
+            font-size: 1rem; font-weight: 700; color: var(--text-main); 
+            margin-bottom: 16px; display: flex; align-items: center; gap: 6px;
+        }
+        
+        /* 세그먼트 컨트롤 (구약/신약 토글) */
+        .testament-toggle{
+            display:flex;background:var(--primary-light);
+            border-radius:var(--radius-sm);padding:4px;margin-bottom:16px;
+        }
+        .testament-btn{
+            flex:1;padding:10px;border:none;background:transparent;
+            cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+            font-size:0.85rem;font-weight:600;color:var(--primary);
+            transition:all 0.2s;border-radius:6px;
+        }
+        .testament-btn.active{background:var(--bg-card);box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+
+        /* 폼 요소 디자인 (Select, Input) */
+        .row{display:flex;gap:12px;margin-bottom:12px;} .row>*{flex:1;}
+        label{
+            display:block;font-size:0.8rem;font-weight:600;
+            color:var(--text-soft);margin-bottom:6px;padding-left:2px;
+        }
+        
+        select,input[type="number"],input[type="text"],textarea{
+            width:100%;padding:12px 14px;
+            border:1px solid var(--border);border-radius:var(--radius-sm);
+            background:var(--bg-card);font-family:'Noto Sans KR',sans-serif;
+            font-size:0.9rem;color:var(--text-main);outline:none;
+            transition:all 0.2s ease;
+        }
+        select{
+            -webkit-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24'%3 Gilead%3E%3Cpath d='M480-345 240-585l56-56 184 184 184-184 56 56-240 245Z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; padding-right: 36px;
+        }
+        select:focus,input:focus,textarea:focus{
+            border-color:var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        input::placeholder, textarea::placeholder {color: var(--text-faint);}
+        input[type="number"]:disabled{opacity:0.5;cursor:not-allowed; background: var(--bg-main);}
+
+        textarea{resize:vertical;line-height:1.7;font-family:'Noto Serif KR',serif;}
+
+        /* 절 범위 및 장 전체 토글 스위치 */
+        .verse-range-row{display:flex;align-items:flex-end;gap:12px;margin-bottom:12px;}
+        .verse-range-row>.verse-input{flex:1;}
+        
+        /* 스위치 스타일 UX 변경 */
+        .whole-chapter-wrap{
+            display:flex;align-items:center;gap:8px;padding-bottom:4px;
+            height:45px; cursor:pointer;user-select:none;
+        }
+        .switch {
+            position: relative; display: inline-block; width: 44px; height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-hover); transition: .3s; border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:focus + .slider { box-shadow: 0 0 1px var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .whole-chapter-wrap span{font-size:0.85rem;font-weight:500;color:var(--text-soft);}
+
+        /* 키워드/해시태그 입력 칩(Chip) 디자인 */
+        .keyword-wrap{position:relative;}
+        .keyword-tags{
+            display:flex;flex-wrap:wrap;gap:8px;min-height:48px;
+            padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+            background:var(--bg-card);cursor:text;align-items:center;transition:all 0.2s;
+        }
+        .keyword-tags:focus-within{border-color:var(--primary); box-shadow: 0 0 0 3px var(--primary-light);}
+        
+        .kw-tag{
+            display:flex;align-items:center;gap:4px;padding:4px 10px;
+            background:var(--primary-light);border-radius:16px;
+            font-size:0.8rem;color:var(--primary);font-weight:600;
+        }
+        .kw-tag button{
+            background:none;border:none;cursor:pointer;color:var(--primary);
+            font-size:1.1rem;padding:0;line-height:1;display:flex;align-items:center;
+        }
+        .kw-tag button:hover {opacity: 0.7;}
+        .kw-tag-input{
+            border:none;background:transparent;outline:none;
+            font-size:0.9rem;font-family:'Noto Sans KR',sans-serif;
+            color:var(--text-main);min-width:100px;flex:1;padding:4px 0;
+        }
+
+        /* 자동완성 드롭다운 */
+        .kw-dropdown{
+            display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:var(--radius-sm);box-shadow:var(--shadow-md);
+            z-index:110;max-height:200px;overflow-y:auto; animation: fadeInSm 0.2s ease;
+        }
+        @keyframes fadeInSm { from {opacity:0; transform:translateY(5px);} to {opacity:1; transform:translateY(0);} }
+        .kw-dropdown.show{display:block;}
+        .kw-dropdown-item{
+            padding:12px 16px;font-size:0.9rem;cursor:pointer;
+            color:var(--text-soft);transition:background 0.15s;
+            display:flex;align-items:center;gap:8px;
+        }
+        .kw-dropdown-item:hover{background:var(--primary-light);color:var(--primary);}
+        .kw-dropdown-item.selected::after{
+            content:"check_circle";font-family: 'Material Symbols Outlined';
+            margin-left:auto;color:var(--primary);font-size: 1.1rem;
+            font-variation-settings: 'FILL' 1;
+        }
+        .kw-dropdown-empty{padding:12px 16px;font-size:0.85rem;color:var(--text-faint);text-align:center;}
+
+        /* 검색 박스 */
+        .search-box{display:flex;gap:10px;margin-bottom:16px;}
+        .search-box input{flex:1; padding-left: 16px;}
+
+        /* 버튼 기본 공통 스타일 */
+        .btn{
+            display:inline-flex;align-items:center;justify-content:center;gap:8px;
+            width:100%;padding:14px;border:none;border-radius:var(--radius-sm);
+            font-family:'Noto Sans KR',sans-serif;font-size:0.95rem;font-weight:700;
+            cursor:pointer;transition:all 0.2s ease;text-decoration: none;
+        }
+        .btn .material-symbols-outlined { font-size: 1.2rem; }
+        
+        .btn-primary{background:var(--primary);color:#ffffff;}
+        .btn-primary:hover{background:var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,125,50,0.2);}
+        .btn-primary:active{transform: translateY(0);}
+
+        .btn-secondary{background:var(--primary-light);color:var(--primary);}
+        .btn-secondary:hover{background:#dbeee0;}
+
+        /* 성경 뷰어 (열람 탭) */
+        #bibleViewer{margin-top:16px;max-height:60vh;overflow-y:auto;padding-right:4px;}
+        .verse-item{
+            display:flex;gap:14px;padding:12px 8px;
+            border-bottom:1px solid rgba(224,230,224,0.5);
+            line-height:1.75;font-size:1rem;font-family:'Noto Serif KR',serif;
+            cursor:pointer;transition:all 0.15s;border-radius:var(--radius-sm);
+        }
+        .verse-item:last-child{border-bottom:none;}
+        .verse-item:hover{background:var(--bg-main);}
+        .verse-item.selected{background:var(--primary-light);}
+        
+        .verse-num{
+            font-family:'Noto Sans KR',sans-serif;font-size:0.75rem;
+            color:var(--primary);font-weight:700;min-width:26px;
+            text-align:right;padding-top:4px;
+        }
+
+        /* 하단 선택 바 (열람 탭) */
+        .verse-select-bar{
+            display:none;position:fixed;bottom:calc(70px + var(--safe-area-bottom));
+            left:16px;right:16px;max-width:648px;margin:0 auto;
+            background:var(--text-main);color:#ffffff;
+            padding:12px 16px;border-radius: var(--radius-md);
+            z-index:95;box-shadow: var(--shadow-md);
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from {transform:translateY(20px); opacity:0;} to {transform:translateY(0); opacity:1;} }
+        .verse-select-bar.show{display:flex;gap:12px;align-items:center;justify-content:space-between;}
+        .verse-select-info{font-size:0.85rem;font-weight:600; font-family:'Noto Sans KR',sans-serif;}
+        
+        .verse-select-btns {display:flex;gap:8px;}
+        .btn-sm { padding: 8px 14px; font-size: 0.8rem; border-radius: 6px; }
+        .btn-clear-sel{background:rgba(255,255,255,0.2);color:#ffffff;}
+        .btn-clear-sel:hover{background:rgba(255,255,255,0.3);}
+        .btn-make-card-sm{background:var(--secondary);color:var(--text-main);}
+        .btn-make-card-sm:hover{background:#f6b405;}
+
+        /* 검색 결과 스타일 */
+        .search-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px; padding: 0 4px;}
+        .search-count{font-size:0.85rem;color:var(--text-soft);font-weight:600;}
+        .search-count em { color: var(--primary); font-style: normal; font-weight: 700;}
+        
+        .btn-back{
+            padding:7px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);
+            background:var(--bg-card);color:var(--text-soft);font-family:'Noto Sans KR',sans-serif;
+            font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.2s;
+            display:flex;align-items:center;gap:4px;
+        }
+        .btn-back:hover{background:var(--bg-main);border-color:var(--border-hover);color:var(--primary);}
+        
+        .search-result-item{
+            padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);
+            background:var(--bg-card);margin-bottom:12px;cursor:pointer;transition:all 0.2s;
+        }
+        .search-result-item:hover{border-color:var(--primary);box-shadow:var(--shadow-sm); transform: translateY(-1px);}
+        .search-result-ref{
+            font-family:'Noto Sans KR',sans-serif;font-size:0.8rem;
+            font-weight:700;color:var(--primary);margin-bottom:8px;
+            display:flex;align-items:center;gap:4px;
+        }
+        .search-result-ref .material-symbols-outlined { font-size: 1rem; }
+        .search-result-text{
+            font-family:'Noto Serif KR',serif;font-size:0.95rem;
+            line-height:1.7;color:var(--text-main);
+        }
+        .search-result-text mark{background:#fff176;color:#000;border-radius:2px;padding:0 2px;}
+
+        /* 로딩 프로그레스 */
+        .search-progress{text-align:center;padding:30px 20px;color:var(--text-soft);font-size:0.9rem;}
+        .progress-bar-wrap{
+            width:100%;height:6px;background:var(--primary-light);
+            border-radius:3px;margin-top:12px;overflow:hidden;
+        }
+        .progress-bar{height:100%;background:var(--primary);border-radius:3px;transition:width 0.1s linear;}
+
+        /* 생성 탭 상세 뷰 */
+        .draft-indicator{
+            display:none;font-size:0.8rem;color:var(--primary);font-weight:600;
+            padding:10px 16px;background:var(--primary-light);border-radius:var(--radius-sm);
+            margin-bottom:16px; border: 1px solid var(--border); align-items: center; gap: 8px;
+        }
+        .draft-indicator.show{display:flex;}
+        
+        #cardTextDisplay{
+            font-family:'Noto Serif KR',serif;font-size:1rem;line-height:1.8;
+            color:var(--text-main);padding:16px;background:var(--bg-main);
+            border-radius:var(--radius-sm);border:1px solid var(--border);
+            min-height:100px;white-space:pre-wrap;cursor:text;
+        }
+        .hl-hint{
+            font-size:0.8rem;color:var(--text-faint);margin-top:8px;
+            padding-left:4px;display:flex;align-items:center;gap:4px;
+        }
+        .hl-hint em { color: var(--secondary); font-style: normal; font-weight: bold;}
+
+        /* 보관함 (View) 탭 필터 영역 */
+        .filter-section{
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:var(--radius-md);padding:16px;margin-bottom:20px;
+            box-shadow:var(--shadow-sm);
+        }
+        .filter-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+        .filter-row:last-child {margin-bottom: 0;}
+        .filter-label{
+            font-size:0.8rem;font-weight:700;color:var(--text-soft);
+            padding-top:4px;white-space:nowrap;display:flex;align-items:center;gap:4px;
+        }
+        .filter-label .material-symbols-outlined { font-size: 1rem; color: var(--primary); }
+        .filter-badges{display:flex;flex-wrap:wrap;gap:8px;flex:1;}
+        
+        .badge{
+            padding:5px 12px;border-radius:16px;font-size:0.8rem;cursor:pointer;
+            border:1px solid var(--border);background:var(--bg-card);
+            color:var(--text-soft);transition:all 0.15s;font-weight:500;
+        }
+        .badge:hover{background:var(--bg-main);border-color:var(--border-hover);color:var(--primary);}
+        .badge.active{background:var(--primary);border-color:var(--primary);color:#ffffff;box-shadow: 0 2px 4px rgba(46,125,50,0.15);}
+
+        /* 보관함 툴바 */
+        .view-toolbar{display:flex;justify-content:flex-end;margin-bottom:16px;gap:8px;}
+        .btn-toolbar{
+            padding:8px 14px;border-radius:var(--radius-sm);
+            font-size:0.85rem;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+            border:1px solid var(--border);transition:all 0.2s;
+            display:flex;align-items:center;gap:6px;
+        }
+        .btn-delete-mode{background:var(--bg-card);color:var(--red-soft);border-color:#f8cccc;}
+        .btn-delete-mode:hover{background:#fff5f5;border-color:var(--red-soft);}
+        .btn-delete-mode.active { background-color: var(--red-soft); color: white; border-color: var(--red-soft);}
+
+        .btn-delete-confirm{background:var(--red-soft);color:#ffffff;border-color:var(--red-soft);display:none;}
+        .btn-delete-confirm:hover{background:#d32f2f;}
+        .btn-cancel-del{background:var(--bg-card);color:var(--text-soft);display:none;}
+        .btn-cancel-del:hover{background:var(--bg-main);}
+
+        /* ★말씀 카드 디자인 UX 전면 개편★ */
+        .word-card{
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:var(--radius-md);margin-bottom:16px;
+            transition:all 0.2s ease;overflow:hidden;
+            position: relative;
+        }
+        .word-card:hover{box-shadow:var(--shadow-md); border-color: var(--border-hover);}
+        
+        /* 삭제 모드일 때 선택 스타일 */
+        .word-card.delete-mode { cursor: pointer; border-color: #f8cccc; }
+        .word-card.delete-mode:hover { background-color: #fff5f5; }
+        .word-card.selected{border-color:var(--red-soft); background-color: #fff5f5; box-shadow: 0 0 0 3px #ffebee;}
+        
+        .card-checkbox-overlay {
+            display: none; position: absolute; top: 16px; left: 16px; z-index: 5;
+        }
+        .delete-mode .card-checkbox-overlay { display: block; }
+        .card-check {
+            width: 20px; height: 20px; accent-color: var(--red-soft); cursor: pointer;
+        }
+
+        /* 카드 헤더 (참조, 날짜, 키워드) */
+        .word-card-header-v2 {
+            padding: 16px 20px; border-bottom: 1px solid rgba(224,230,224,0.5);
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+        }
+        .header-main-info { flex: 1; min-width: 0; }
+        .word-card-ref{
+            font-family:'Noto Sans KR',sans-serif;font-size:0.9rem;
+            font-weight:700;color:var(--primary);margin-bottom:6px;
+            display:flex;align-items:center;gap:5px;
+        }
+        .word-card-ref .material-symbols-outlined { font-size: 1.1rem; }
+        
+        .card-kw-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+        .kw-chip{
+            padding:3px 9px;background:var(--bg-main);border-radius:12px;
+            font-size:0.75rem;color:var(--text-soft);font-weight:500;
+            border: 1px solid var(--border);
+        }
+        
+        .header-side-info { text-align: right; flex-shrink: 0; }
+        .card-date{font-size:0.75rem;color:var(--text-faint);margin-bottom: 8px; display: block;}
+
+        /* 카드 본문 (말씀) */
+        .word-card-text-v2 {
+            padding: 20px; font-family:'Noto Serif KR',serif; font-size:1.05rem;
+            line-height:1.85;color:var(--text-main); white-space:pre-wrap;
+            background-color: #fbfdfb;
+        }
+        
+        /* 카드 묵상 (Memo) */
+        .word-card-memo-v2 {
+            padding: 16px 20px; background:var(--bg-card);
+            border-top: 1px solid rgba(224,230,224,0.5);
+            font-family:'Noto Sans KR',sans-serif;font-size:0.9rem;
+            color:var(--text-soft);line-height:1.7; position: relative;
+        }
+        .word-card-memo-v2::before {
+            content: "format_quote"; font-family: 'Material Symbols Outlined';
+            position: absolute; top: 12px; left: 8px; color: var(--primary-light);
+            font-size: 2rem; transform: rotate(180deg); opacity: 0.7;
+        }
+        .memo-content { position: relative; z-index: 1; padding-left: 10px; }
+
+        /* 카드 액션 버튼 (수정) */
+        .card-actions-v2{
+            padding: 10px 20px; display:flex;gap:8px;justify-content:flex-end;
+            background: #fafbfa; border-top: 1px solid rgba(224,230,224,0.5);
+        }
+        .btn-card-action{
+            padding:6px 12px;border:1px solid var(--border);border-radius:6px;
+            font-size:0.8rem;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+            background:var(--bg-card);color:var(--text-soft);transition:all 0.2s;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .btn-card-action:hover{background:var(--primary-light);border-color:var(--border-hover);color:var(--primary);}
+        .btn-card-action .material-symbols-outlined { font-size: 1rem; }
+
+        /* 수정 폼 스타일 */
+        .edit-form{padding: 20px; display:flex;flex-direction:column;gap:12px; background: #fff;}
+        
+        /* 빈 상태 / 에러 상태 */
+        .empty-state{
+            text-align:center;padding:60px 20px;color:var(--text-faint);
+            font-size:0.95rem; background: var(--bg-card); border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+        .empty-state .material-symbols-outlined { font-size: 3rem; color: var(--border-hover); margin-bottom: 16px; }
+        .status-msg{text-align:center;padding:40px 20px;color:var(--text-soft);font-size:0.9rem;}
+        .status-err{color:var(--red-soft); font-weight: 600;}
+
+        /* 해시태그 탭 디자인 */
+        .chapter-tag-card{
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:var(--radius-md);padding:18px;margin-bottom:12px;
+            box-shadow: var(--shadow-sm); transition: 0.2s;
+        }
+        .chapter-tag-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md);}
+        .chapter-tag-ref{
+            font-family:'Noto Sans KR',sans-serif;font-size:0.9rem;
+            font-weight:700;color:var(--primary);margin-bottom:10px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .chapter-tag-badges{display:flex;flex-wrap:wrap;gap:8px;}
+        .chapter-tag-badge{
+            padding:4px 12px;border-radius:16px;font-size:0.8rem;font-weight:600;
+            background:var(--primary-light);color:var(--primary);
+            font-family:'Noto Sans KR',sans-serif; cursor: pointer;
+        }
+        .chapter-tag-badge:hover { background: #dbeee0; }
+        
+        /* 토스트 알림 */
+        .toast{
+            position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+            background:rgba(0,0,0,0.85);color:#ffffff;padding:12px 24px;
+            border-radius:24px;font-size:0.9rem;font-family:'Noto Sans KR',sans-serif;
+            opacity:0;transition:all 0.3s ease;pointer-events:none;z-index:1000;
+            display:flex;align-items:center;gap:8px; white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+        .toast .material-symbols-outlined { color: var(--secondary); font-size: 1.2rem; }
+
+        /* 하이라이트 색상 */
+        .hl-yellow{background:#fff59d;border-radius:2px;padding:0 2px;}
+        .hl-green{background:#c8e6c9;border-radius:2px;padding:0 2px;}
+        .hl-pink{background:#f8bbd0;border-radius:2px;padding:0 2px;}
+
+        /* 하이라이트 팝업 디자인 UX 개선 */
+        .hl-popup{
+            position:fixed;display:none;flex-direction:column;gap:8px;
+            background:var(--bg-card);border:1px solid var(--border);
+            border-radius:var(--radius-md);padding:12px;
+            box-shadow:var(--shadow-md);z-index:1000; animation: fadeInSm 0.2s ease;
+        }
+        .hl-popup.show{display:flex;}
+        .hl-popup-title{
+            font-size:0.75rem;font-weight:700;color:var(--text-soft);
+            font-family:'Noto Sans KR',sans-serif;margin-bottom:2px; text-align: center;
+        }
+        .hl-popup-btns{display:flex;gap:8px;align-items:center; justify-content: center;}
+        .hl-color-btn{
+            width:30px;height:30px;border-radius:50%;cursor:pointer;
+            transition:all 0.15s; border: 2px solid transparent;
+        }
+        .hl-color-btn:hover{transform:scale(1.15); border-color: rgba(0,0,0,0.1);}
+        .hl-color-btn.yellow{background:#fff59d; box-shadow: inset 0 0 0 1px #fbc02d;}
+        .hl-color-btn.green{background:#c8e6c9; box-shadow: inset 0 0 0 1px #a5d6a7;}
+        .hl-color-btn.pink{background:#f8bbd0; box-shadow: inset 0 0 0 1px #f48fb1;}
+        
+        .hl-remove-btn{
+            font-size:0.75rem;font-weight:600;color:var(--red-soft);
+            background:none;border:1px solid #f8cccc;border-radius:var(--radius-sm);
+            padding:5px 10px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+            transition:all 0.15s; display: flex; align-items: center; gap: 2px;
+        }
+        .hl-remove-btn:hover{background:#fff5f5; border-color: var(--red-soft);}
+        .hl-remove-btn .material-symbols-outlined { font-size: 1rem; }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1><span class="material-symbols-outlined">menu_book</span>Word Card Archive</h1>
+</header>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('read-panel', this)">
+            <span class="material-symbols-outlined">local_library</span>
+            <span>열람</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('create-panel', this)">
+            <span class="material-symbols-outlined">edit_note</span>
+            <span>생성</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('tag-panel', this)">
+            <span class="material-symbols-outlined">sell</span>
+            <span>태그</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('view-panel', this)">
+            <span class="material-symbols-outlined">style</span>
+            <span>보관함</span>
+        </button>
+    </div>
+
+    <div id="read-panel" class="panel active">
+        <div class="tab-hint">
+            <span class="material-symbols-outlined">info</span>
+            장별 열람 또는 키워드로 전체 성경을 검색할 수 있습니다.
+        </div>
+        
+        <div class="card-box">
+            <div class="testament-toggle" style="background:#e0e6e0; color: #424942; margin-bottom: 20px;">
+                <button class="testament-btn active" style="color: #1a1c1a;" id="modeRead" onclick="switchReadMode('read')">📖 장별 열람</button>
+                <button class="testament-btn" style="color: #1a1c1a;" id="modeSearch" onclick="switchReadMode('search')">🔍 키워드 검색</button>
+            </div>
+
+            <div id="readModeBox">
+                <div class="testament-toggle">
+                    <button class="testament-btn active" onclick="switchTestament('ot', this)">구약</button>
+                    <button class="testament-btn" onclick="switchTestament('nt', this)">신약</button>
+                </div>
+                <div class="row">
+                    <div>
+                        <label>성경책</label>
+                        <select id="readBook" onchange="updateChapters('readBook','readChapter'); loadBibleVerses();"></select>
+                    </div>
+                    <div>
+                        <label>장</label>
+                        <select id="readChapter" onchange="loadBibleVerses()"></select>
+                    </div>
+                </div>
+                <div id="bibleViewer"><div class="status-msg">성경책과 장을 선택해 주세요.</div></div>
+                
+                <div class="verse-select-bar" id="verseSelectBar">
+                    <span class="verse-select-info" id="verseSelectInfo">0절 선택됨</span>
+                    <div class="verse-select-btns">
+                        <button class="btn btn-sm btn-clear-sel" onclick="clearVerseSelection()">선택 해제</button>
+                        <button class="btn btn-sm btn-make-card-sm" onclick="makeCardFromSelection()">
+                            <span class="material-symbols-outlined">draw</span>카드 작성
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="searchModeBox" style="display:none;">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="검색어를 입력하세요 (예: 사랑, 믿음)" onkeydown="if(event.key==='Enter') doSearch()">
+                    <button class="btn btn-primary" style="width: auto; padding: 12px 20px;" onclick="doSearch()">
+                        <span class="material-symbols-outlined">search</span>검색
+                    </button>
+                </div>
+                <div id="searchResults"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-panel" class="panel">
+        <div class="tab-hint">
+            <span class="material-symbols-outlined">info</span>
+            말씀 범위를 선택하고 묵상을 기록해 카드로 저장하세요.
+        </div>
+        
+        <div class="draft-indicator" id="draftIndicator">
+            <span class="material-symbols-outlined">history_edu</span>
+            ✏️ 작성 중인 카드가 복원되었습니다.
+        </div>
+        
+        <div class="card-box">
+            <div class="card-box-title">
+                <span class="material-symbols-outlined">library_add</span>
+                새 말씀 카드 만들기
+            </div>
+            
+            <div class="testament-toggle">
+                <button class="testament-btn active" onclick="switchTestamentCard('ot', this)">구약</button>
+                <button class="testament-btn" onclick="switchTestamentCard('nt', this)">신약</button>
+            </div>
+            <div class="row">
+                <div><label>성경책</label><select id="cardBook" onchange="updateChapters('cardBook','cardChapter');"></select></div>
+                <div><label>장</label><select id="cardChapter"></select></div>
+            </div>
+            
+            <div class="verse-range-row">
+                <div class="verse-input"><label>시작 절</label><input type="number" id="startVerse" placeholder="예: 1" min="1"></div>
+                <div class="verse-input"><label>끝 절</label><input type="number" id="endVerse" placeholder="예: 5" min="1"></div>
+                
+                <div class="whole-chapter-wrap">
+                    <label class="switch">
+                        <input type="checkbox" id="wholeChapter" onchange="toggleWholeChapter(this)">
+                        <span class="slider"></span>
+                    </label>
+                    <span>장 전체</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-secondary" style="margin-top:4px; margin-bottom: 16px;" onclick="loadCardPreview()">
+                <span class="material-symbols-outlined">download</span>본문 불러오기
+            </button>
+            
+            <label>본문</label>
+            <div id="cardTextDisplay"></div>
+            <textarea id="cardText" rows="8" style="display:none;"></textarea>
+            
+            <p class="hl-hint">
+                <span class="material-symbols-outlined">stylus</span>
+                본문 텍스트를 드래그하면 <em>하이라이트</em>를 적용할 수 있어요.
+            </p>
+            
+            <label style="margin-top: 16px;">키워드 (쉼표 또는 엔터로 구분)</label>
+            <div class="keyword-wrap" id="keywordWrap">
+                <div class="keyword-tags" id="keywordTags" onclick="focusKwInput()">
+                    <input type="text" class="kw-tag-input" id="kwInput" placeholder="예: 감사, 위로"
+                        oninput="onKwInput()" onkeydown="onKwKeydown(event)" onfocus="showKwDropdown()" autocomplete="off">
+                </div>
+                <div class="kw-dropdown" id="kwDropdown"></div>
+            </div>
+            
+            <label style="margin-top: 16px;">묵상 기록</label>
+            <textarea id="cardMemo" rows="4" placeholder="오늘 이 말씀에서 받은 은혜와 작정, 기도 제목 등을 자유롭게 기록해 보세요."></textarea>
+            
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="saveWordCard()">
+                <span class="material-symbols-outlined">favorite</span>💝 말씀 카드 저장하기
+            </button>
+        </div>
+    </div>
+
+
+    <div id="tag-panel" class="panel">
+        <div class="tab-hint">
+            <span class="material-symbols-outlined">info</span>
+            성경책·장별로 주제 태그를 달고 분류해 볼 수 있습니다.
+        </div>
+
+        <div class="card-box" style="margin-bottom:20px;">
+            <div class="card-box-title">
+                <span class="material-symbols-outlined">label</span>
+                성경 장별 태그 달기
+            </div>
+            
+            <div class="testament-toggle">
+                <button class="testament-btn active" onclick="switchTagTestament('ot',this)">구약</button>
+                <button class="testament-btn" onclick="switchTagTestament('nt',this)">신약</button>
+            </div>
+            <div class="row">
+                <div><label>성경책</label><select id="tagBook" onchange="updateChapters('tagBook','tagChapter');"></select></div>
+                <div><label>장</label><select id="tagChapter"></select></div>
+            </div>
+            
+            <label style="margin-top: 12px;">해시태그 (Enter로 입력)</label>
+            <div class="tag-input-wrap" id="tagInputWrap">
+                <div class="keyword-tags" id="tagInputTags" onclick="document.getElementById('tagRawInput').focus()">
+                    <input type="text" class="kw-tag-input" id="tagRawInput"
+                        placeholder="#기도 #찬양 #치유"
+                        onkeydown="onTagInputKeydown(event)"
+                        onfocus="showTagDropdown()"
+                        oninput="renderTagDropdown(this.value)"
+                        autocomplete="off">
+                </div>
+                <div class="kw-dropdown" id="tagDropdown"></div>
+            </div>
+            
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="saveChapterTags()">
+                <span class="material-symbols-outlined">save</span>태그 저장
+            </button>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-row">
+                <span class="filter-label"><span class="material-symbols-outlined">tag</span>태그 필터</span>
+                <div class="filter-badges" id="tagFilterBadges">
+                    </div>
+            </div>
+        </div>
+
+        <div id="tagListDisplay"></div>
+    </div>
+
+    <div id="view-panel" class="panel">
+        <div class="tab-hint">
+            <span class="material-symbols-outlined">info</span>
+            저장된 말씀 카드를 키워드 또는 성경책으로 필터링할 수 있습니다.
+        </div>
+        
+        <div class="filter-section">
+            <div class="filter-row">
+                <span class="filter-label"><span class="material-symbols-outlined">key</span>키워드</span>
+                <div class="filter-badges" id="kwFilterBadges"></div>
+            </div>
+            <div style="height:1px; background:var(--border); margin: 12px 0;"></div>
+            <div class="filter-row">
+                <span class="filter-label"><span class="material-symbols-outlined">book</span>성경책</span>
+                <div class="filter-badges" id="bookFilterBadges"></div>
+            </div>
+        </div>
+        
+        <div class="view-toolbar">
+            <button class="btn-toolbar btn-delete-mode" id="btnDeleteMode" onclick="toggleDeleteMode()">
+                <span class="material-symbols-outlined">delete</span>카드 삭제
+            </button>
+            <button class="btn-toolbar btn-delete-confirm" id="btnDeleteConfirm" onclick="confirmDelete()">
+                삭제 확인 (<span id="deleteCount">0</span>)
+            </button>
+            <button class="btn-toolbar btn-cancel-del" id="btnCancelDel" onclick="cancelDeleteMode()">
+                취소
+            </button>
+        </div>
+        
+        <div id="savedCardsDisplay"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast">
+    <span class="material-symbols-outlined">check_circle</span>
+    <span id="toastMessage">메시지</span>
+</div>
+
+<div class="hl-popup" id="hlPopup">
+    <div class="hl-popup-title">하이라이트</div>
+    <div class="hl-popup-btns">
+        <button class="hl-color-btn yellow" onclick="applyHighlight('hl-yellow')" title="노랑"></button>
+        <button class="hl-color-btn green"  onclick="applyHighlight('hl-green')"  title="초록"></button>
+        <button class="hl-color-btn pink"   onclick="applyHighlight('hl-pink')"   title="분홍"></button>
+        <div style="width:1px; height:20px; background:var(--border); margin: 0 2px;"></div>
+        <button class="hl-remove-btn"       onclick="applyHighlight(null)">
+            <span class="material-symbols-outlined">ink_eraser</span>지우기
+        </button>
+    </div>
+</div>
+
+<script>
+    // 성경 데이터 정의 (OT, NT) - 원본 유지
+    const otBooks = [
+        {id:"gen",name:"창세기",file:"genesis",chapters:50},
+        {id:"exo",name:"출애굽기",file:"exodus",chapters:40},
+        {id:"lev",name:"레위기",file:"leviticus",chapters:27},
+        {id:"num",name:"민수기",file:"numbers",chapters:36},
+        {id:"deu",name:"신명기",file:"deuteronomy",chapters:34},
+        {id:"jos",name:"여호수아",file:"joshua",chapters:24},
+        {id:"jdg",name:"사사기",file:"judges",chapters:21},
+        {id:"rut",name:"룻기",file:"ruth",chapters:4},
+        {id:"1sa",name:"사무엘상",file:"1samuel",chapters:31},
+        {id:"2sa",name:"사무엘하",file:"2samuel",chapters:24},
+        {id:"1ki",name:"열왕기상",file:"1kings",chapters:22},
+        {id:"2ki",name:"열왕기하",file:"2kings",chapters:25},
+        {id:"1ch",name:"역대상",file:"1chronicles",chapters:29},
+        {id:"2ch",name:"역대하",file:"2chronicles",chapters:36},
+        {id:"ezr",name:"에스라",file:"ezra",chapters:10},
+        {id:"neh",name:"느헤미야",file:"nehemiah",chapters:13},
+        {id:"est",name:"에스더",file:"esther",chapters:10},
+        {id:"job",name:"욥기",file:"job",chapters:42},
+        {id:"psa",name:"시편",file:"psalms",chapters:150},
+        {id:"pro",name:"잠언",file:"proverbs",chapters:31},
+        {id:"ecc",name:"전도서",file:"ecclesiastes",chapters:12},
+        {id:"sng",name:"아가",file:"song",chapters:8},
+        {id:"isa",name:"이사야",file:"isaiah",chapters:66},
+        {id:"jer",name:"예레미야",file:"jeremiah",chapters:52},
+        {id:"lam",name:"예레미야애가",file:"lamentations",chapters:5},
+        {id:"ezk",name:"에스겔",file:"ezekiel",chapters:48},
+        {id:"dan",name:"다니엘",file:"daniel",chapters:12},
+        {id:"hos",name:"호세아",file:"hosea",chapters:14},
+        {id:"jol",name:"요엘",file:"joel",chapters:3},
+        {id:"amo",name:"아모스",file:"amos",chapters:9},
+        {id:"oba",name:"오바댜",file:"obadiah",chapters:1},
+        {id:"jon",name:"요나",file:"jonah",chapters:4},
+        {id:"mic",name:"미가",file:"micah",chapters:7},
+        {id:"nam",name:"나훔",file:"nahum",chapters:3},
+        {id:"hab",name:"하박국",file:"habakkuk",chapters:3},
+        {id:"zep",name:"스바냐",file:"zephaniah",chapters:3},
+        {id:"hag",name:"학개",file:"haggai",chapters:2},
+        {id:"zec",name:"스가랴",file:"zechariah",chapters:14},
+        {id:"mal",name:"말라기",file:"malachi",chapters:4},
+    ];
+    const ntBooks = [
+        {id:"mat",name:"마태복음",file:"matthew",chapters:28},
+        {id:"mrk",name:"마가복음",file:"mark",chapters:16},
+        {id:"luk",name:"누가복음",file:"luke",chapters:24},
+        {id:"jhn",name:"요한복음",file:"john",chapters:21},
+        {id:"act",name:"사도행전",file:"acts",chapters:28},
+        {id:"rom",name:"로마서",file:"romans",chapters:16},
+        {id:"1co",name:"고린도전서",file:"1corinthians",chapters:16},
+        {id:"2co",name:"고린도후서",file:"2corinthians",chapters:13},
+        {id:"gal",name:"갈라디아서",file:"galatians",chapters:6},
+        {id:"eph",name:"에베소서",file:"ephesians",chapters:6},
+        {id:"php",name:"빌립보서",file:"philippians",chapters:4},
+        {id:"col",name:"골로새서",file:"colossians",chapters:4},
+        {id:"1th",name:"데살로니가전서",file:"1thessalonians",chapters:5},
+        {id:"2th",name:"데살로니가후서",file:"2thessalonians",chapters:3},
+        {id:"1ti",name:"디모데전서",file:"1timothy",chapters:6},
+        {id:"2ti",name:"디모데후서",file:"2timothy",chapters:4},
+        {id:"tit",name:"디도서",file:"titus",chapters:3},
+        {id:"phm",name:"빌레몬서",file:"philemon",chapters:1},
+        {id:"heb",name:"히브리서",file:"hebrews",chapters:13},
+        {id:"jas",name:"야고보서",file:"james",chapters:5},
+        {id:"1pe",name:"베드로전서",file:"1peter",chapters:5},
+        {id:"2pe",name:"베드로후서",file:"2peter",chapters:3},
+        {id:"1jn",name:"요한일서",file:"1john",chapters:5},
+        {id:"2jn",name:"요한이서",file:"2john",chapters:1},
+        {id:"3jn",name:"요한삼서",file:"3john",chapters:1},
+        {id:"jud",name:"유다서",file:"jude",chapters:1},
+        {id:"rev",name:"요한계시록",file:"revelation",chapters:22},
+    ];
+    const allBooks = [...otBooks, ...ntBooks];
+
+    // 공통 유틸 함수
+    function getBook(id){ return allBooks.find(b=>b.id===id); }
+    
+    function showToast(msg){ 
+        const t=document.getElementById("toast"); 
+        const m=document.getElementById("toastMessage");
+        m.textContent=msg; 
+        t.classList.add("show"); 
+        setTimeout(()=>t.classList.remove("show"),2800); 
+    }
+
+    // 탭 전환 (JS 로직은 유지, 하단 바 대응)
+    function switchTab(pId,btn){
+        // 판넬 전환
+        document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+        document.getElementById(pId).classList.add('active'); 
+        
+        // 버튼 활성화
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 탭별 초기화 로직
+        if(pId==='view-panel'){cancelDeleteMode(); renderCards();}
+        if(pId==='tag-panel'){renderTagList(); loadExistingTags();}
+        if(pId==='create-panel'){restoreDraft(); checkDraftIndicator();}
+        
+        // 탭 전환 시 스크롤 상단으로
+        window.scrollTo(0,0);
+    }
+
+    // 셀렉트 박스 업데이트
+    function updateChapters(bookSelectId,chapterSelectId){
+        const bookId = document.getElementById(bookSelectId).value;
+        const book=getBook(bookId);
+        const sel=document.getElementById(chapterSelectId); 
+        sel.innerHTML="";
+        if(!book) return;
+        for(let i=1;i<=book.chapters;i++){
+            const o = document.createElement("option");
+            o.value = i;
+            o.textContent = i + "장";
+            sel.appendChild(o);
+        }
+    }
+
+    // 구약/신약 토글
+    function populateBookSelect(selectId, books){
+        const sel=document.getElementById(selectId); sel.innerHTML="";
+        books.forEach(b=>{ const o=document.createElement("option"); o.value=b.id; o.textContent=b.name; sel.appendChild(o); });
+    }
+
+    function switchTestament(type, btn){
+        // 디자인 변경: 부모 요소 내에서 active 찾기
+        btn.parentNode.querySelectorAll('.testament-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        populateBookSelect('readBook', type==='ot'?otBooks:ntBooks);
+        updateChapters('readBook','readChapter');
+        loadBibleVerses();
+    }
+    
+    function switchTestamentCard(type, btn){
+        btn.parentNode.querySelectorAll('.testament-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        populateBookSelect('cardBook', type==='ot'?otBooks:ntBooks);
+        updateChapters('cardBook','cardChapter');
+    }
+
+    // JSON 데이터 로드
+    async function getBibleData(bookId){
+        const book=getBook(bookId);
+        if(!book) throw new Error(`책 ID 없음: ${bookId}`);
+        // 경로 수정 필요 시 여기서 (현재 ./)
+        const res=await fetch(`./krv_eng/${book.file}.json`);
+        if(!res.ok) throw new Error(`로드 실패(${res.status}): krv_eng/${book.file}.json`);
+        return await res.json();
+    }
+
+    // ─── 열람/검색 모드 전환 ───
+    let currentReadMode = 'read';
+    function switchReadMode(mode){
+        currentReadMode = mode;
+        // 버튼 디자인 active
+        document.getElementById('modeRead').classList.toggle('active', mode==='read');
+        document.getElementById('modeSearch').classList.toggle('active', mode==='search');
+        // 박스 표시/숨김
+        document.getElementById('readModeBox').style.display = mode==='read'?'block':'none';
+        document.getElementById('searchModeBox').style.display = mode==='search'?'block':'none';
+        if(mode==='search') document.getElementById('searchInput').focus();
+    }
+
+    // ─── 키워드 검색 ───
+    let _searchResultsData = []; // 원본 변수명 유지
+    let isSearching   = false;
+
+    async function doSearch(){
+        const query = document.getElementById('searchInput').value.trim();
+        if(!query){ showToast('검색어를 입력해 주세요.'); return; }
+        if(isSearching){ return; } // 중복 검색 방지
+
+        isSearching   = true;
+        _searchResultsData = [];
+        const resultsEl = document.getElementById('searchResults');
+        
+        // 프로그레스 바 디자인 적용
+        resultsEl.innerHTML = `
+            <div class="search-progress" id="searchProgress">
+                <div>🔍 성경 66권 전체에서 <em>"${query}"</em> 검색 중...</div>
+                <div style="font-size:0.8rem; margin-top:5px; color:var(--text-faint);">잠시만 기다려 주세요 ( <span id="searchProgressText">0 / 66</span> )</div>
+                <div class="progress-bar-wrap"><div class="progress-bar" id="searchProgressBar" style="width:0%"></div></div>
+            </div>`;
+
+        let done = 0;
+        // 성능을 위해 fetch 에러 발생 시 skip 처리
+        for(const book of allBooks){
+            try{
+                const data = await getBibleData(book.id);
+                // 새 데이터 포맷 대응 (chapters 배열 확인)
+                const chapters = data.chapters || [];
+                chapters.forEach(ch=>{
+                    (ch.verses||[]).forEach(v=>{
+                        if(v.text && v.text.includes(query)){
+                            _searchResultsData.push({ 
+                                bookName:book.name, 
+                                chapter:ch.chapter, 
+                                verse:v.verse, 
+                                text:v.text,
+                                bookId: book.id // 나중에 필요 시 사용
+                            });
+                        }
+                    });
+                });
+            } catch(e){ console.warn(`${book.name} 로드 실패`, e); }
+            
+            done++;
+            // 프로그레스 업데이트
+            const pct = Math.round(done/allBooks.length*100);
+            const bar = document.getElementById('searchProgressBar');
+            const txt = document.getElementById('searchProgressText');
+            if(bar) bar.style.width = pct+'%';
+            if(txt) txt.textContent = `${done} / ${allBooks.length}`;
+            
+            // UI 업데이트 렌더링 시간을 주기 위해 아주 잠깐 대기 (싱글스레드 차단 방지)
+            if(done % 5 === 0) await new Promise(r=>setTimeout(r,1));
+        }
+
+        isSearching = false;
+        renderSearchResults(query);
+    }
+
+    function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+    function renderSearchResults(query){
+        const el = document.getElementById('searchResults');
+        if(_searchResultsData.length===0){
+            el.innerHTML=`<div class="empty-state">
+                <span class="material-symbols-outlined">search_off</span>
+                <div>"${query}"에 대한 검색 결과가 없습니다.</div>
+                <div style="font-size:0.85rem; margin-top:5px;">다른 검색어를 입력해 보세요.</div>
+            </div>`;
+            return;
+        }
+        
+        // 검색 결과 헤더 및 리스트 (디자인 적용)
+        const headerHtml = `
+            <div class="search-header">
+                <span class="search-count">총 <em>${_searchResultsData.length}</em>개의 구절 발견</span>
+            </div>`;
+            
+        const listHtml = _searchResultsData.map((r,i)=>`
+                <div class="search-result-item" onclick="showVerseDetail(${i})">
+                    <div class="search-result-ref">
+                        <span class="material-symbols-outlined">auto_stories</span>
+                        ${r.bookName} ${r.chapter}장 ${r.verse}절
+                    </div>
+                    <div class="search-result-text">${r.text.replace(new RegExp(escapeRegex(query),'g'), m=>`<mark>${m}</mark>`)}</div>
+                </div>
+            `).join('');
+            
+        el.innerHTML = headerHtml + listHtml;
+    }
+
+    // ─── 절 상세 보기 ───
+    function showVerseDetail(index){
+        const r   = _searchResultsData[index];
+        const q   = document.getElementById('searchInput').value.trim();
+        const el  = document.getElementById('searchResults');
+        
+        // 키워드 하이라이팅 처리
+        const highlighted = r.text.replace(new RegExp(escapeRegex(q),'g'), m=>`<mark>${m}</mark>`);
+        
+        // 상세 뷰 디자인 (카드스타일)
+        el.innerHTML=`
+            <div class="verse-detail-header" style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <button class="btn-back" onclick="renderSearchResults('${q}')">
+                    <span class="material-symbols-outlined">arrow_back</span>목록으로
+                </button>
+                <div class="search-result-ref" style="margin-bottom:0; font-size:1rem;">
+                    <span class="material-symbols-outlined">auto_stories</span>
+                    ${r.bookName} ${r.chapter}장 ${r.verse}절
+                </div>
+            </div>
+            <div class="card-box" style="margin-top:0; border-color:var(--primary); box-shadow:var(--shadow-md);">
+                <div style="font-family:'Noto Serif KR',serif;font-size:1.1rem;line-height:1.9;color:var(--text-main);">${highlighted}</div>
+                </div>`;
+    }
+
+    // ─── 장별 열람 (JS 로직) ───
+    function toggleWholeChapter(checkbox){
+        const s=document.getElementById("startVerse"), e=document.getElementById("endVerse");
+        // 스위치 디자인 대응: 체크되면 절 입력 비활성화
+        s.disabled = e.disabled = checkbox.checked;
+        if(checkbox.checked){s.value="";e.value="";}
+    }
+
+    async function loadBibleVerses(){
+        const bookId=document.getElementById("readBook").value;
+        const chapter=document.getElementById("readChapter").value;
+        const viewer=document.getElementById("bibleViewer");
+        const book=getBook(bookId);
+        
+        if(!bookId || !chapter) return;
+        
+        viewer.innerHTML='<div class="status-msg">📖 말씀을 불러오는 중입니다...</div>';
+        
+        // 하단 바 숨김
+        clearVerseSelection();
+
+        try{
+            const data=await getBibleData(bookId);
+            let verses=[];
+            // 데이터 포맷 대응
+            if(data.chapters && Array.isArray(data.chapters)){
+                const tgt=data.chapters.find(c=>c.chapter==chapter);
+                if(tgt&&tgt.verses) verses=tgt.verses; // {verse, text} 배열
+            } else if(Array.isArray(data)){ // 구 포맷
+                verses=data.filter(v=>v.chapter==chapter);
+            }
+            
+            if(verses.length===0){
+                viewer.innerHTML=`<div class="status-msg status-err">⚠️ ${book.name} ${chapter}장 데이터를 찾을 수 없습니다.</div>`;
+                return;
+            }
+            
+            viewer.innerHTML="";
+            verses.forEach(v=>{
+                const div=document.createElement("div"); 
+                div.className="verse-item";
+                div.dataset.verse=v.verse; 
+                div.dataset.text=v.text; // 텍스트 저장
+                
+                // 절 아이템 HTML 디자인
+                div.innerHTML=`<span class="verse-num">${v.verse}</span><span>${v.text}</span>`;
+                
+                // 클릭 이벤트 (절 선택)
+                div.addEventListener('click', ()=>toggleVerseSelection(div, v.verse, v.text));
+                viewer.appendChild(div);
+            });
+            
+            // 장 태그 로드 (함수 하단에 정의)
+            displayChapterTagsInReader(book.name, chapter);
+            
+            // 스크롤 상단으로
+            viewer.scrollTop = 0;
+
+        } catch(err){ 
+            console.error(err);
+            viewer.innerHTML=`<div class="status-msg status-err">⚠️ 오류 발생: ${err.message}<br>데이터 파일이 없거나 로드에 실패했습니다.</div>`; 
+        }
+    }
+
+    // ─── 절 선택 및 카드 작성 연결 UX ───
+    let selectedVerses = []; // [{verse, text}]
+
+    function toggleVerseSelection(div, verse, text){
+        const idx = selectedVerses.findIndex(v=>v.verse==verse);
+        if(idx>=0){
+            // 이미 선택됨 -> 해제
+            selectedVerses.splice(idx,1);
+            div.classList.remove('selected');
+        } else {
+            // 선택 -> 추가
+            selectedVerses.push({verse, text});
+            div.classList.add('selected');
+        }
+        updateVerseSelectBar();
+    }
+
+    function updateVerseSelectBar(){
+        const bar  = document.getElementById('verseSelectBar');
+        const info = document.getElementById('verseSelectInfo');
+        
+        if(selectedVerses.length===0){
+            bar.classList.remove('show'); // 숨김
+        } else {
+            bar.classList.add('show'); // 표시
+            // 정렬
+            const sorted = [...selectedVerses].sort((a,b)=>a.verse-b.verse);
+            const first = sorted[0].verse;
+            const last = sorted[sorted.length-1].verse;
+            
+            if(first === last){
+                info.textContent = `${first}절 선택됨`;
+            } else {
+                // 연속 여부 확인 안하고 그냥 처음-끝으로 표시 (필요시 로직 추가)
+                info.textContent = `${first}-${last}절 선택됨 (${selectedVerses.length}개)`;
+            }
+        }
+    }
+
+    function clearVerseSelection(){
+        selectedVerses=[];
+        // 뷰어 내 스타일 초기화
+        document.querySelectorAll('.verse-item.selected').forEach(el=>el.classList.remove('selected'));
+        updateVerseSelectBar();
+    }
+
+    // [핵심 UX] 선택한 절 가지고 카드 생성 탭으로 이동
+    function makeCardFromSelection(){
+        if(selectedVerses.length===0) return;
+
+        const bookId  = document.getElementById('readBook').value;
+        const chapter = document.getElementById('readChapter').value;
+        const book    = getBook(bookId);
+        
+        // 정렬
+        const sorted  = [...selectedVerses].sort((a,b)=>a.verse-b.verse);
+        const first   = sorted[0].verse;
+        const last    = sorted[sorted.length-1].verse;
+
+        // 1. 카드 생성 판넬 정보 세팅
+        // 구/신약 탭 맞추기
+        const isOT = otBooks.some(b=>b.id===bookId);
+        const cardTestamentBtns = document.querySelectorAll('#create-panel .testament-btn');
+        // 디자인 대응active
+        cardTestamentBtns.forEach(b=>b.classList.remove('active'));
+        cardTestamentBtns[isOT?0:1].classList.add('active');
+        
+        // 책 셀렉트 팝퓰레이트 및 선택
+        populateBookSelect('cardBook', isOT?otBooks:ntBooks);
+        document.getElementById('cardBook').value = bookId;
+        
+        // 장 셀렉트 업데이트 및 선택
+        updateChapters('cardBook','cardChapter');
+        document.getElementById('cardChapter').value = chapter;
+
+        // 절 범위 세팅 (장 전체 꺼짐)
+        document.getElementById('startVerse').value = first;
+        document.getElementById('endVerse').value   = last;
+        document.getElementById('wholeChapter').checked = false; // 스위치 꺼짐
+        document.getElementById('startVerse').disabled   = false;
+        document.getElementById('endVerse').disabled     = false;
+
+        // 2. 본문 합쳐서 미리보기 렌더링
+        // 하이라이트 없는 순수 텍스트로 시작
+        const plainText = sorted.map(v=>`${v.verse}절  ${v.text}`).join('\n');
+        renderCardTextDisplay(plainText.replace(/\n/g, '<br>')); // 디스플레이 영역
+        syncTextareaFromDisplay(); // 실제 저장 textarea 업데이트
+
+        // 3. 탭 전환
+        const createTabBtn = document.querySelector('.tab-btn[onclick*="create-panel"]');
+        switchTab('create-panel', createTabBtn);
+
+        // 선택 초기화
+        clearVerseSelection();
+        // 임시저장 수행 (탭 이동했으므로)
+        saveDraft();
+        checkDraftIndicator();
+    }
+
+    // ─── 카드 생성 탭 (본문 불러오기, 하이라이트 중추) ───
+    
+    // [기존 함수 오버라이드] 본문 불러오기 -> 디스플레이 영역에 렌더링하도록 변경
+    async function loadCardPreview(){
+        const bookId=document.getElementById("cardBook").value;
+        const chapter=document.getElementById("cardChapter").value;
+        const isWhole=document.getElementById("wholeChapter").checked;
+        const start=parseInt(document.getElementById("startVerse").value);
+        const end=parseInt(document.getElementById("endVerse").value);
+        const displayEl = document.getElementById('cardTextDisplay');
+        
+        if(!bookId || !chapter) return;
+        if(!isWhole&&(!start||!end)){showToast("시작 절과 끝 절을 입력해 주세요.");return;}
+        if(!isWhole&&start>end){showToast("시작 절이 끝 절보다 클 수 없어요.");return;}
+        
+        displayEl.innerHTML='<span style="color:var(--text-faint); font-size:0.9rem;">⏳ 말씀을 불러오는 중...</span>';
+
+        try{
+            const data=await getBibleData(bookId);
+            let verses=[];
+            if(data.chapters&&Array.isArray(data.chapters)){
+                const tgt=data.chapters.find(c=>c.chapter==chapter);
+                if(tgt&&tgt.verses) verses=isWhole?tgt.verses:tgt.verses.filter(v=>v.verse>=start&&v.verse<=end);
+            } else if(Array.isArray(data)){
+                verses=isWhole?data.filter(v=>v.chapter==chapter):data.filter(v=>v.chapter==chapter&&v.verse>=start&&v.verse<=end);
+            }
+            
+            if(verses.length===0){
+                displayEl.innerHTML="";
+                showToast("해당 범위의 말씀을 찾을 수 없어요.");
+                return;
+            }
+            
+            // 불러온 직후엔 하이라이트 없는 순수 HTML 렌더링 (\n -> <br>)
+            const plainText = verses.map(v=>`${v.verse}절  ${v.text}`).join('\n');
+            // 안전하게 HTML 변환
+            const htmlContent = plainText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+            renderCardTextDisplay(htmlContent);
+            syncTextareaFromDisplay(); // textarea 백업
+
+        } catch(err){
+            displayEl.innerHTML="";
+            showToast(`오류: ${err.message}`);
+        }
+    }
+
+    // 디스플레이 영역 렌더링 보조
+    function renderCardTextDisplay(htmlContent){
+        const display = document.getElementById('cardTextDisplay');
+        if(!htmlContent){
+            display.innerHTML = '<span style="color:var(--text-faint);font-size:0.9rem;">위에서 본문을 불러오거나 직접 입력하세요.</span>';
+            return;
+        }
+        display.innerHTML = htmlContent;
+    }
+
+    // ─── ★드래그 하이라이트 UX 구현★ ───
+    let savedRange = null;
+
+    // 마우스업/터치엔드 시 선택 영역 확인 및 팝업 표시
+    document.addEventListener('mouseup', handleSelectionEnd);
+    document.addEventListener('touchend', handleSelectionEnd);
+
+    function handleSelectionEnd(e){
+        const popup = document.getElementById('hlPopup');
+        const displayArea = document.getElementById('cardTextDisplay');
+
+        // 팝업 내부 클릭은 무시
+        if(popup.contains(e.target)) return;
+
+        const sel = window.getSelection();
+        if(!sel || sel.rangeCount === 0 || sel.isCollapsed){
+            // 선택 해제됨 -> 팝업 외부 클릭이면 닫기
+            if(!popup.contains(e.target)) popup.classList.remove('show');
+            return;
+        }
+
+        const range = sel.getRangeAt(0);
+        
+        // [중요] 반드시 본문 디스플레이 영역 내부 선택이어야 함
+        if(!displayArea.contains(range.commonAncestorContainer)){
+            popup.classList.remove('show');
+            return;
+        }
+
+        // 범위 저장
+        savedRange = range.cloneRange();
+
+        // 팝업 위치 계산 (선택 영역 위 중앙)
+        const rect = range.getBoundingClientRect();
+        const scrollY = window.scrollY || document.documentElement.scrollTop;
+        const scrollX = window.scrollX || document.documentElement.scrollLeft;
+        
+        popup.style.display = 'flex'; // 좌표 계산을 위해 일단 표시
+        const popupWidth = popup.offsetWidth;
+        const popupHeight = popup.offsetHeight;
+        
+        // 화면 중앙 및 터지지 않게 범위 제한 좌표 계산
+        let left = rect.left + scrollX + (rect.width/2) - (popupWidth/2);
+        let top = rect.top + scrollY - popupHeight - 12; // 12px 간격
+
+        // 좌우 가로 제한 (화면 밖)
+        left = Math.max(16, Math.min(left, window.innerWidth - popupWidth - 16));
+        // 상단 제한 (화면 밖 - 위쪽에 공간 없으면 아래쪽에 표시)
+        if(rect.top - popupHeight - 20 < 0){
+             top = rect.bottom + scrollY + 10;
+        }
+
+        popup.style.left = left + 'px';
+        popup.style.top  = top + 'px';
+        popup.style.display = ''; // 원래 상태로 (CSS fadeInSm 애니메이션 작동)
+        popup.classList.add('show');
+    }
+
+    // 하이라이트 적용 함수
+    function applyHighlight(colorClass){
+        const popup = document.getElementById('hlPopup');
+        popup.classList.remove('show');
+
+        if(!savedRange || !window.getSelection()) return;
+
+        // 1. 기존 하이라이트 제거 (범위 내 이미 span이 있다면 해제)
+        removeHighlightInRange(savedRange);
+
+        if(colorClass){
+            // 2. 새 하이라이트 span 생성
+            const span = document.createElement('span');
+            span.className = colorClass;
+            try{
+                // 간단하게 surroundContents 시도 (계층 꼬이면 에러남)
+                savedRange.surroundContents(span);
+            } catch(e){
+                // 계층 꼬였을 때 에러 우회: extractContents -> insertNode (텍스트만 씌우기)
+                const frag = savedRange.extractContents();
+                span.appendChild(frag);
+                savedRange.insertNode(span);
+            }
+        }
+
+        // 3. 변경된 HTML을 실제 저장용 textarea에 동기화
+        syncTextareaFromDisplay();
+        
+        // 선택 해제 및 범위 초기화
+        window.getSelection().removeAllRanges();
+        savedRange = null;
+        
+        // [UX] 하이라이트 후 자동 임시저장
+        autoDraft();
+    }
+
+    // 범위 내 하이라이트 제거 (span 태그만 벗겨내기)
+    function removeHighlightInRange(range){
+        const display = document.getElementById('cardTextDisplay');
+        const spans = display.querySelectorAll('.hl-yellow, .hl-green, .hl-pink');
+        
+        spans.forEach(span=>{
+            // 범위가 span과 겹치는지 확인
+            if(range.intersectsNode(span)){
+                // span 태그 자리에 텍스트 노드만 남기고 span 제거
+                const parent = span.parentNode;
+                while(span.firstChild){
+                    parent.insertBefore(span.firstChild, span);
+                }
+                parent.removeChild(span);
+            }
+        });
+        // 텍스트 노드 병합 (쪼개진 노드 정리)
+        display.normalize();
+    }
+
+    // Display Area(HTML) -> Textarea 동기화 (저장 목적)
+    function syncTextareaFromDisplay(){
+        const display = document.getElementById('cardTextDisplay');
+        const hiddenArea = document.getElementById('cardText');
+        // placeholder 상태 확인
+        if(display.querySelector('span[style*="text-faint"]')){
+             hiddenArea.value = "";
+        } else {
+             // 디자인 HTML 그대로 가져감
+             hiddenArea.value = display.innerHTML; 
+        }
+    }
+
+    // ─── 키워드 칩(Chip) 입력 로직 (JS 로직은 유지, 디자인 대응) ───
+    let selectedKeywords=[];
+
+    // LocalStorage에서 저장된 모든 키워드 고유값 가져오기 (자동완성용)
+    function getAllKeywords(){
+        const all=new Set();
+        getSavedCards().forEach(c=>{
+            if(Array.isArray(c.keywords)) c.keywords.forEach(k=>all.add(k));
+            else if(c.keyword) c.keyword.split(',').map(k=>k.trim()).filter(Boolean).forEach(k=>all.add(k)); // 구 포맷 호환
+        });
+        return [...all];
+    }
+
+    // 키워드 칩 렌더링
+    function renderKwTags(){
+        const container=document.getElementById("keywordTags");
+        const input=document.getElementById("kwInput");
+        // 기존 칩 제거
+        container.querySelectorAll('.kw-tag').forEach(el=>el.remove());
+        
+        // 칩 생성 (디자인 적용)
+        selectedKeywords.forEach(kw=>{
+            const tag=document.createElement("div"); 
+            tag.className="kw-tag";
+            tag.innerHTML=`<span>${kw}</span><button type="button" onclick="removeKwTag('${kw}')">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">cancel</span>
+            </button>`;
+            container.insertBefore(tag,input);
+        });
+        autoDraft(); // 키워드 변경 시 임시저장
+    }
+
+    function addKwTag(kw){
+        kw=kw.trim().replace(/,/g,''); // 쉼표 제거
+        if(!kw||selectedKeywords.includes(kw)) {
+             document.getElementById("kwInput").value="";
+             renderKwDropdown(""); // 드롭다운 갱신
+             return;
+        }
+        selectedKeywords.push(kw); 
+        renderKwTags();
+        document.getElementById("kwInput").value=""; 
+        renderKwDropdown(""); // 드롭다운 갱신
+        focusKwInput();
+    }
+
+    function removeKwTag(kw){ 
+        selectedKeywords=selectedKeywords.filter(k=>k!==kw); 
+        renderKwTags(); 
+        renderKwDropdown(document.getElementById("kwInput").value); 
+    }
+
+    function focusKwInput(){ document.getElementById("kwInput").focus(); }
+    function onKwInput(){ renderKwDropdown(document.getElementById("kwInput").value); }
+    
+    // 키 이벤트 핸들러 (엔터, 쉼표 -> 태그 추가 / 백스페이스 -> 태그 삭제)
+    function onKwKeydown(e){
+        const input = document.getElementById("kwInput");
+        const val = input.value;
+        
+        if(e.key==='Enter' || e.key===','){
+            e.preventDefault();
+            if(val.trim()) addKwTag(val);
+        }
+        if(e.key==='Backspace' && !val && selectedKeywords.length>0){
+            // 입력창 비었을 때 백스페이스 -> 마지막 태그 삭제
+            removeKwTag(selectedKeywords[selectedKeywords.length-1]);
+        }
+    }
+
+    // 자동완성 드롭다운 렌더링
+    function showKwDropdown(){ renderKwDropdown(document.getElementById("kwInput").value); }
+    function renderKwDropdown(query){
+        const dropdown=document.getElementById("kwDropdown");
+        const all=getAllKeywords(); 
+        const filtered=all.filter(k=>k.includes(query));
+        
+        if(filtered.length===0 && !query){dropdown.classList.remove('show');return;}
+        
+        dropdown.classList.add('show');
+        
+        let html = "";
+        if(filtered.length===0){
+            // 새 키워드 추가 항목
+            html = query ? `<div class="kw-dropdown-item" onclick="addKwTag('${query}')">
+                <span class="material-symbols-outlined">add</span>"${query}" 추가하기</div>` 
+                : `<div class="kw-dropdown-empty">저장된 키워드가 없습니다.</div>`;
+        } else {
+            // 필터링된 목록
+            html = filtered.map(k=>`<div class="kw-dropdown-item ${selectedKeywords.includes(k)?'selected':''}" onclick="addKwTag('${k}')">${k}</div>`).join('');
+            // 쿼리가 있고 목록에 없으면 추가 항목 배치
+            if(query && !filtered.includes(query)){
+                html += `<div class="kw-dropdown-item" onclick="addKwTag('${query}')">
+                    <span class="material-symbols-outlined">add</span>"${query}" 추가하기</div>`;
+            }
+        }
+        dropdown.innerHTML = html;
+    }
+
+    // 외부 클릭 시 드롭다운 닫기
+    document.addEventListener('click',e=>{ 
+        if(!document.getElementById('keywordWrap').contains(e.target)) {
+            document.getElementById('kwDropdown').classList.remove('show');
+        }
+    });
+
+    // ─── 말씀 카드 저장 (LocalStorage) ───
+    
+    function getSavedCards(){ 
+        try{return JSON.parse(localStorage.getItem("wordCards"))||[];}
+        catch{return[];} 
+    }
+
+    function saveWordCard(){
+        const bookId=document.getElementById("cardBook").value;
+        const chapter=document.getElementById("cardChapter").value;
+        const isWhole=document.getElementById("wholeChapter").checked;
+        const start=document.getElementById("startVerse").value;
+        const end=document.getElementById("endVerse").value;
+        const memo=document.getElementById("cardMemo").value.trim();
+        
+        // [중요] 디스플레이 영역 HTML을 최종 동기화 후 가져옴 (하이라이트 포함)
+        syncTextareaFromDisplay(); 
+        const textHTML=document.getElementById("cardText").value;
+        
+        // 입력창에 남아있는 키워드도 추가
+        const rawInput=document.getElementById("kwInput").value.trim();
+        if(rawInput) selectedKeywords.push(rawInput.replace(/,/g,''));
+
+        if(!textHTML){showToast("본문을 먼저 불러와 주세요.");return;}
+        
+        const book=getBook(bookId);
+        // 참조 라벨 생성
+        const ref=isWhole?`${book.name} ${chapter}장 전체`:`${book.name} ${chapter}장 ${start}-${end}절`;
+        
+        const saved=getSavedCards();
+        // 새 카드 객체 (구 포맷 keyword 문자열 호환성 유지)
+        const finalKeywords = [...new Set(selectedKeywords)]; // 중복 제거
+        const newCard = {
+            ref,
+            bookName:book.name, // 필터링용
+            text: textHTML, // 하이라이트 포함된 HTML
+            keywords: finalKeywords, // 배열
+            keyword: finalKeywords.join(', '), // 구 포맷 호환용 문자열
+            memo,
+            date:new Date().toLocaleDateString("ko-KR"), // 오늘 날짜
+            timestamp: new Date().getTime() // 정렬용
+        };
+        
+        saved.push(newCard);
+        localStorage.setItem("wordCards",JSON.stringify(saved));
+        
+        // 폼 초기화
+        resetCreateForm();
+        
+        // 보관함으로 이동 (선택 사항, UX)
+        const viewTabBtn = document.querySelector('.tab-btn[onclick*="view-panel"]');
+        switchTab('view-panel', viewTabBtn);
+        
+        showToast("💝 말씀 카드가 보관함에 저장되었습니다!");
+    }
+
+    function resetCreateForm(){
+        renderCardTextDisplay(""); // 디스플레이 초기화
+        syncTextareaFromDisplay();
+        document.getElementById("cardMemo").value="";
+        document.getElementById("kwInput").value="";
+        document.getElementById("startVerse").value="";
+        document.getElementById("endVerse").value="";
+        document.getElementById("wholeChapter").checked=false;
+        document.getElementById("startVerse").disabled=false;
+        document.getElementById("endVerse").disabled=false;
+        selectedKeywords=[]; 
+        renderKwTags();
+        document.getElementById('kwDropdown').classList.remove('show');
+        
+        clearDraft(); // 임시저장 삭제
+        checkDraftIndicator();
+    }
+
+    // ─── 카드 작성 임시저장 로직 (탭 이동 시 UX) ───
+    function saveDraft(){
+        // 생성 탭이 활성화일 때만 저장
+        if(!document.getElementById('create-panel').classList.contains('active')) return;
+        
+        syncTextareaFromDisplay(); // HTML 최신화
+        const draft = {
+            bookId   : document.getElementById('cardBook').value,
+            chapter  : document.getElementById('cardChapter').value,
+            start    : document.getElementById('startVerse').value,
+            end      : document.getElementById('endVerse').value,
+            isWhole  : document.getElementById('wholeChapter').checked,
+            textHtml : document.getElementById('cardText').value, // 하이라이트포함HTML
+            memo     : document.getElementById('cardMemo').value,
+            keywords : [...selectedKeywords],
+            time     : new Date().getTime()
+        };
+        localStorage.setItem('cardDraft', JSON.stringify(draft));
+    }
+
+    function restoreDraft(){
+        try{
+            const draft = JSON.parse(localStorage.getItem('cardDraft'));
+            // 데이터가 없거나 너무 오래되면(예: 하루) 복원 안 함 로직 추가 가능
+            if(!draft || !draft.textHtml) return;
+
+            // 폼 복원
+            // 구/신약 버튼 디자인 대응
+            const isOT = otBooks.some(b=>b.id===draft.bookId);
+            const cardTestamentBtns = document.querySelectorAll('#create-panel .testament-btn');
+            cardTestamentBtns.forEach(b=>b.classList.remove('active'));
+            cardTestamentBtns[isOT?0:1].classList.add('active');
+            
+            populateBookSelect('cardBook', isOT?otBooks:ntBooks);
+            document.getElementById('cardBook').value = draft.bookId;
+            
+            updateChapters('cardBook','cardChapter');
+            document.getElementById('cardChapter').value   = draft.chapter;
+            
+            document.getElementById('startVerse').value    = draft.start;
+            document.getElementById('endVerse').value      = draft.end;
+            
+            document.getElementById('wholeChapter').checked= draft.isWhole;
+            document.getElementById('startVerse').disabled = draft.isWhole;
+            document.getElementById('endVerse').disabled   = draft.isWhole;
+            
+            // 본문(HTML) 복원
+            renderCardTextDisplay(draft.textHtml);
+            document.getElementById('cardText').value = draft.textHtml;
+            
+            document.getElementById('cardMemo').value = draft.memo||'';
+            
+            // 키워드 칩 복원
+            selectedKeywords = draft.keywords||[];
+            renderKwTags();
+            
+            // showToast("✏️ 작성 중이던 카드를 불러왔습니다.");
+
+        } catch(e){ console.warn("초안 복원 실패", e); }
+    }
+
+    function clearDraft(){ localStorage.removeItem('cardDraft'); }
+
+    // 임시저장 표시 UI 업데이트
+    function checkDraftIndicator(){
+        const ind = document.getElementById('draftIndicator');
+        const draft = localStorage.getItem('cardDraft');
+        try{
+            const d = JSON.parse(draft);
+            // 본문 내용이 있을 때만 표시
+            ind.classList.toggle('show', !!(d && d.textHtml));
+        } catch{ ind.classList.remove('show'); }
+    }
+
+    // 입력 필드 변경 시 자동 임시저장 (디바운싱 적용하면 더 좋음)
+    function autoDraft(){
+        // 현재 생성 탭이면 저장
+        if(document.getElementById('create-panel').classList.contains('active')){
+            // 하이라이트 span 계층 normalize 후 저장하는 게 좋음
+            const disp = document.getElementById('cardTextDisplay');
+            if(disp) disp.normalize();
+            saveDraft();
+        }
+    }
+    
+    // 이벤트 리스너 등록 (생성 탭 입력 감지)
+    document.addEventListener('DOMContentLoaded', ()=>{
+        const inputs = ['cardMemo', 'startVerse', 'endVerse', 'cardBook', 'cardChapter', 'wholeChapter'];
+        inputs.forEach(id=>{
+            const el = document.getElementById(id);
+            if(el){
+                // change나 input 이벤트 감지
+                const eventType = (el.tagName === 'SELECT' || el.type === 'checkbox') ? 'change' : 'input';
+                el.addEventListener(eventType, autoDraft);
+            }
+        });
+    });
+
+
+    // ─── 보관함 (View) - 필터 및 ★말씀 카드 렌더링 UX 개편★ ───
+    let activeKeywords=[], activeBook=null;
+
+    // 필터링 로직
+    function toggleKwFilter(kw){ 
+        activeKeywords=activeKeywords.includes(kw)?activeKeywords.filter(k=>k!==kw):[...activeKeywords,kw]; 
+        renderCards(); 
+    }
+    function toggleBookFilter(bn){ 
+        activeBook=activeBook===bn?null:bn; 
+        renderCards(); 
+    }
+
+    // 필터 칩 렌더링 (디자인 적용)
+    function buildFilters(cards){
+        // 키워드 칩
+        const kwSet=new Set();
+        cards.forEach(c=>{ 
+            if(Array.isArray(c.keywords)) c.keywords.forEach(k=>kwSet.add(k)); 
+            else if(c.keyword) c.keyword.split(',').map(k=>k.trim()).filter(Boolean).forEach(k=>kwSet.add(k)); // 호환
+        });
+        
+        const kwFilterBadges = document.getElementById("kwFilterBadges");
+        if(kwSet.size===0){
+             kwFilterBadges.innerHTML=`<span style="font-size:0.8rem;color:var(--text-faint); padding: 5px 0;">없음</span>`;
+        } else {
+             kwFilterBadges.innerHTML=[...kwSet].map(kw=>`
+                <span class="badge ${activeKeywords.includes(kw)?'active':''}" onclick="toggleKwFilter('${kw}')">${kw}</span>
+             `).join('');
+        }
+
+        // 성경책 칩
+        const bookSet=new Set();
+        cards.forEach(c=> {
+            // bookName 필드가 없으면 참조 문자열에서 파싱
+            const bName = c.bookName || c.ref?.split(' ')[0];
+            if(bName) bookSet.add(bName);
+        });
+        
+        const bookFilterBadges = document.getElementById("bookFilterBadges");
+        if(bookSet.size===0){
+            bookFilterBadges.innerHTML=`<span style="font-size:0.8rem;color:var(--text-faint); padding: 5px 0;">없음</span>`;
+        } else {
+            bookFilterBadges.innerHTML=[...bookSet].map(bn=>`
+                <span class="badge ${activeBook===bn?'active':''}" onclick="toggleBookFilter('${bn}')">${bn}</span>
+            `).join('');
+        }
+    }
+
+    // ─── 카드 삭제 모드 UX ───
+    let isDeleteMode=false;
+    
+    function toggleDeleteMode(){
+        if(!isDeleteMode){
+            // 삭제 모드 진입
+            isDeleteMode=true;
+            document.getElementById("btnDeleteMode").classList.add("active");
+            document.getElementById("btnDeleteMode").innerHTML = `<span class="material-symbols-outlined">close</span>선택 취소`;
+            document.getElementById("btnDeleteConfirm").style.display="inline-flex";
+            document.getElementById("btnCancelDel").style.display="inline-flex"; // 전체 취소 버튼
+            
+            // 카드 컨테이너에 스타일 적용 (체크박스 표시됨)
+            document.getElementById("savedCardsDisplay").classList.add("delete-mode");
+            updateDeleteCount();
+        } else {
+            // 삭제 모드 버튼 다시 눌러서 나감
+            cancelDeleteMode();
+        }
+    }
+
+    function cancelDeleteMode(){
+        isDeleteMode=false;
+        document.getElementById("btnDeleteMode").classList.remove("active");
+        document.getElementById("btnDeleteMode").innerHTML = `<span class="material-symbols-outlined">delete</span>카드 삭제`;
+        document.getElementById("btnDeleteConfirm").style.display="none";
+        document.getElementById("btnCancelDel").style.display="none";
+        
+        document.getElementById("savedCardsDisplay").classList.remove("delete-mode");
+        
+        // 체크박스 및 카드 선택 스타일 초기화
+        document.querySelectorAll('.card-check').forEach(cb=>{cb.checked=false;});
+        document.querySelectorAll('.word-card').forEach(c=>c.classList.remove('selected'));
+        updateDeleteCount();
+    }
+
+    // 선택된 삭제 개수 업데이트
+    function updateDeleteCount(){
+        const checked = document.querySelectorAll('.card-check:checked').length;
+        document.getElementById("deleteCount").textContent = checked;
+        // 디자인: 개수 0이면 확인 버튼 비활성화 스타일 처리 가능
+        document.getElementById("btnDeleteConfirm").style.opacity = checked > 0 ? '1' : '0.6';
+    }
+
+    // 카드 영역 클릭 시 삭제 체크박스 토글 (삭제 모드일 때만)
+    function handleCardClick(e, index, isMode) {
+        // 수정 버튼이나 체크박스 자체 클릭이면 무시
+        if (e.target.closest('.card-actions-v2') || e.target.classList.contains('card-check')) return;
+        
+        if (isMode) {
+            const cb = document.getElementById(`check-${index}`);
+            if (cb) {
+                cb.checked = !cb.checked;
+                onCardCheck(index, cb.checked);
+            }
+        }
+    }
+
+    function onCardCheck(index,checked){ 
+        const card=document.getElementById(`card-${index}`); 
+        if(checked) card.classList.add('selected'); 
+        else card.classList.remove('selected'); 
+        updateDeleteCount();
+    }
+
+    function confirmDelete(){
+        const checked=[...document.querySelectorAll('.card-check:checked')];
+        if(checked.length===0){showToast("삭제할 카드를 선택해 주세요.");return;}
+        
+        if(!confirm(`선택한 ${checked.length}개의 말씀 카드를 정말 삭제할까요?`)) return;
+        
+        const toDeleteIndexes = checked.map(cb=>parseInt(cb.dataset.index));
+        // 인덱스 꼬이지 않게 역순 정렬 후 삭제
+        toDeleteIndexes.sort((a,b)=>b-a);
+        
+        const cards=getSavedCards();
+        toDeleteIndexes.forEach(idx => {
+            cards.splice(idx, 1);
+        });
+        
+        localStorage.setItem("wordCards",JSON.stringify(cards));
+        
+        cancelDeleteMode(); 
+        renderCards();
+        showToast(`${toDeleteIndexes.length}개의 카드가 삭제되었습니다.`);
+    }
+
+    // [기존 함수 호합] 접기/펼치기 (디자인 변경으로 미사용 처리하거나 유지, 여기선 유지하되 사용 안 함)
+    // 보관함 렌더링 UX에서 본문/묵상 모두 펼쳐서 보여주는 방식 선택
+    function toggleText(index){ /* 미사용 */ }
+    function toggleMemo(index){ /* 미사용 */ }
+
+    // ★★★ 보관함 말씀 카드 렌더링 (인스타그램 스타일 UX 전면 개편) ★★★
+    function renderCards(){
+        const cards=getSavedCards(); 
+        const display=document.getElementById("savedCardsDisplay");
+        
+        // 필터 칩 갱신
+        buildFilters(cards);
+        
+        // 필터링 적용
+        let filtered=[...cards];
+        
+        // 최신순 정렬 (timestamp 기준, 없으면 그냥 역순)
+        filtered.sort((a,b)=> (b.timestamp||0) - (a.timestamp||0));
+        if(!cards[0]?.timestamp) filtered = filtered.reverse(); // 구 포맷 역순
+
+        if(activeKeywords.length>0){
+            filtered=filtered.filter(c=>{ 
+                // 키워드 배열 호환성 처리
+                const kws=Array.isArray(c.keywords)?c.keywords:(c.keyword||'').split(',').map(k=>k.trim()).filter(Boolean);
+                // 선택된 모든 키워드를 포함해야 함 (AND 조건, 원하면 OR로 변경 가능)
+                return activeKeywords.every(ak=>kws.includes(ak)); 
+            });
+        }
+        if(activeBook){
+            filtered=filtered.filter(c=>(c.bookName || c.ref?.split(' ')[0])===activeBook);
+        }
+
+        // 빈 상태 렌더링 (디자인 적용)
+        if(filtered.length===0){ 
+            display.innerHTML=`<div class="empty-state">
+                <span class="material-symbols-outlined">style</span>
+                <div>조건에 맞는 말씀 카드가 없습니다.</div>
+                ${cards.length > 0 ? '<div style="font-size:0.85rem; margin-top:5px;">필터를 해제해 보세요.</div>' : '<div style="font-size:0.85rem; margin-top:5px;">"생성" 탭에서 첫 카드를 만들어 보세요!</div>'}
+            </div>`; 
+            return; 
+        }
+
+        // 카드 리스트 생성 (HTML UX 개편)
+        display.innerHTML=filtered.map(c=>{
+            // 원본 배열에서의 실제 인덱스 찾기 (삭제/수정용)
+            const realIndex=cards.indexOf(c);
+            
+            // 키워드 칩 HTML
+            const kws=Array.isArray(c.keywords)?c.keywords:(c.keyword||'').split(',').map(k=>k.trim()).filter(Boolean);
+            const kwChipsHtml=kws.length?`<div class="card-kw-chips">${kws.map(k=>`<span class="kw-chip">${k}</span>`).join('')}</div>`:'';
+            
+            // 묵상 HTML (있을 때만 디자인 적용)
+            const memoHtml=c.memo?`
+                <div class="word-card-memo-v2">
+                    <div class="memo-content">${c.memo.replace(/\n/g, '<br>')}</div>
+                </div>`
+                : '';
+
+            // [핵심] 카드 레이아웃 HTML
+            return `
+            <div class="word-card" id="card-${realIndex}" onclick="handleCardClick(event, ${realIndex}, isDeleteMode)">
+                <div class="card-checkbox-overlay">
+                    <input type="checkbox" class="card-check" id="check-${realIndex}" data-index="${realIndex}" onchange="onCardCheck(${realIndex},this.checked)">
+                </div>
+                
+                <div class="word-card-header-v2">
+                    <div class="header-main-info">
+                        <div class="word-card-ref">
+                            <span class="material-symbols-outlined">auto_stories</span>
+                            ${c.ref}
+                        </div>
+                        ${kwChipsHtml}
+                    </div>
+                    <div class="header-side-info">
+                        <span class="card-date">${c.date}</span>
+                    </div>
+                </div>
+                
+                <div class="word-card-text-v2">${c.text}</div>
+                
+                ${memoHtml}
+                
+                <div class="card-actions-v2">
+                    <button class="btn-card-action" onclick="startEdit(${realIndex})">
+                        <span class="material-symbols-outlined">edit</span>수정
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+        
+        // 현재 삭제 모드면 컨테이너 스타일 유지
+        if(isDeleteMode) display.classList.add("delete-mode");
+    }
+
+    // ─── 카드 수정 UX (디자인 적용) ───
+    function startEdit(index){
+        const cards=getSavedCards();
+        const c=cards[index];
+        const cardEl=document.getElementById(`card-${index}`);
+        
+        // 키워드 문자열로 변환
+        const kws=Array.isArray(c.keywords)?c.keywords:(c.keyword||'').split(',').map(k=>k.trim()).filter(Boolean);
+        
+        // 하이라이트 span 제거된 순수 텍스트 추출 로직 (수정 시 하이라이트 유지할지 선택)
+        // 여기서는 임시로 HTML 그대로 편집기에 넣음 (태그 보임, 좋은 UX는 아님)
+        // [개선안] 하이라이트 유지 UX는 복잡하므로 여기선 HTML 제거된 텍스트로 수정하게 함
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = c.text;
+        const plainTextForEdit = tempDiv.innerText.replace(/ 절 /g, '절 '); // '절' 앞 공백 정리
+
+        // 카드 내용을 수정 폼으로 교체
+        cardEl.innerHTML=`
+            <div class="edit-form">
+                <div class="word-card-ref" style="margin-bottom:5px;">
+                    <span class="material-symbols-outlined">edit_note</span>카드 수정
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-faint); margin-bottom:10px;">📖 ${c.ref}</div>
+                
+                <label>본문 (하이라이트는 초기화됩니다)</label>
+                <textarea id="edit-text-${index}" rows="6">${plainTextForEdit}</textarea>
+                
+                <label>키워드 (쉼표 구분)</label>
+                <input type="text" id="edit-keyword-${index}" value="${kws.join(', ')}" placeholder="예: 감사, 위로">
+                
+                <label>묵상</label>
+                <textarea id="edit-memo-${index}" rows="3" placeholder="묵상 기록">${c.memo||''}</textarea>
+                
+                <div class="card-actions-v2" style="background:none; border:none; padding: 10px 0 0;">
+                    <button class="btn btn-sm btn-clear-sel" style="color:var(--text-soft); width:auto;" onclick="renderCards()">✕ 취소</button>
+                    <button class="btn btn-sm btn-primary" style="width:auto; padding: 8px 16px;" onclick="saveEdit(${index})">
+                        <span class="material-symbols-outlined">save</span>저장
+                    </button>
+                </div>
+            </div>`;
+            
+        // 스크롤 이동
+        cardEl.scrollIntoView({behavior: 'smooth', block: 'center'});
+    }
+    
+    function saveEdit(index){
+        const cards=getSavedCards();
+        
+        // 텍스트 (\n -> <br>) - 하이라이트는 초기화됨
+        const rawText = document.getElementById(`edit-text-${index}`).value.trim();
+        const htmlText = rawText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+        
+        // 키워드 배열화
+        const kwStr = document.getElementById(`edit-keyword-${index}`).value;
+        const keywords = kwStr.split(',').map(k=>k.trim()).filter(Boolean);
+        
+        const memo = document.getElementById(`edit-memo-${index}`).value.trim();
+        
+        if(!rawText) {showToast("본문 내용은 필수입니다."); return;}
+
+        // 데이터 업데이트
+        cards[index].text=htmlText;
+        cards[index].keywords=keywords; 
+        cards[index].keyword=keywords.join(', '); // 호환성
+        cards[index].memo=memo;
+        // 수정 날짜 표시는 안 함 (원본 저장일 유지)
+        
+        localStorage.setItem("wordCards",JSON.stringify(cards)); 
+        
+        renderCards(); // 리로드
+        showToast("카드가 수정되었습니다.");
+    }
+
+
+    // ============================================
+    // ─── 해시태그 (Chapter Tag) UX (JS 원본 유지 및 디자인 적용) ───
+    
+    function getChapterTags(){ try{return JSON.parse(localStorage.getItem("chapterTags"))||{};}catch{return{};} }
+    function saveChapterTagsData(data){ localStorage.setItem("chapterTags", JSON.stringify(data)); }
+
+    let tagInputChips = []; // selectedKeywords 변수명과 충돌 피하기 위해 변경
+    let activeTagFilter  = null;
+
+    function switchTagTestament(type, btn){
+        btn.parentNode.querySelectorAll('.testament-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        populateBookSelect('tagBook', type==='ot'?otBooks:ntBooks);
+        updateChapters('tagBook','tagChapter');
+        // 선택된 장의 기존 태그 불러오기
+        loadExistingTags();
+    }
+
+    // [기존 로직 유지] 장 변경 시 태그 불러오기
+    function loadExistingTags(){
+        const bookId  = document.getElementById('tagBook').value;
+        const chapter = document.getElementById('tagChapter').value;
+        if(!bookId || !chapter) return;
+        
+        const book    = getBook(bookId);
+        const key     = `${book.name}_${chapter}`;
+        const data    = getChapterTags();
+        
+        tagInputChips = data[key] ? [...data[key]] : [];
+        renderTagInputChips();
+    }
+    
+    // 로드 및 장 변경 이벤트 바인딩
+    document.addEventListener('DOMContentLoaded', ()=>{
+        ['tagBook', 'tagChapter'].forEach(id=>{
+            const el = document.getElementById(id);
+            if(el) el.addEventListener('change', loadExistingTags);
+        });
+    });
+
+    // 태그 입력 칩 렌더링
+    function renderTagInputChips(){
+        const container = document.getElementById('tagInputTags');
+        const input     = document.getElementById('tagRawInput');
+        container.querySelectorAll('.kw-tag').forEach(el=>el.remove());
+        
+        tagInputChips.forEach(t=>{
+            const tag = document.createElement('div');
+            tag.className = 'kw-tag';
+            // 디자인: 해시태그 # 표시 추가
+            tag.innerHTML = `<span>#${t}</span><button type="button" onclick="removeTagInput('${t}')">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">cancel</span>
+            </button>`;
+            container.insertBefore(tag, input);
+        });
+    }
+
+    function addTagInput(t){
+        // # 기호 제거 및 정리
+        t = t.trim().replace(/^#/,'').replace(/,/g,'');
+        if(!t || tagInputChips.includes(t)) {
+            document.getElementById('tagRawInput').value='';
+            renderTagDropdown('');
+            return;
+        }
+        tagInputChips.push(t);
+        renderTagInputChips();
+        document.getElementById('tagRawInput').value='';
+        renderTagDropdown('');
+        document.getElementById('tagRawInput').focus();
+    }
+
+    function removeTagInput(t){
+        tagInputChips = tagInputChips.filter(x=>x!==t);
+        renderTagInputChips();
+        renderTagDropdown(document.getElementById('tagRawInput').value);
+    }
+
+    function onTagInputKeydown(e){
+        const input = document.getElementById('tagRawInput');
+        const val = input.value;
+        if(e.key==='Enter'||e.key===','){
+            e.preventDefault();
+            if(val.trim()) addTagInput(val);
+        }
+        if(e.key==='Backspace'&&!val&&tagInputChips.length>0){
+            removeTagInput(tagInputChips[tagInputChips.length-1]);
+        }
+    }
+
+    // 태그 자동완성 드롭다운
+    function showTagDropdown(){ renderTagDropdown(document.getElementById('tagRawInput').value); }
+    function renderTagDropdown(query){
+        const dropdown = document.getElementById('tagDropdown');
+        query = query.replace(/^#/,''); // 검색 시 # 제거
+        
+        // 저장된 모든 해시태그 수집
+        const data = getChapterTags();
+        const allTags = new Set();
+        Object.values(data).forEach(arr=>arr.forEach(t=>allTags.add(t)));
+        
+        const filtered = [...allTags].filter(t=>t.includes(query));
+
+        if(filtered.length===0 && !query){ dropdown.classList.remove('show'); return; }
+        dropdown.classList.add('show');
+
+        let html = "";
+        if(filtered.length===0){
+            html = query ? `<div class="kw-dropdown-item" onclick="addTagInput('${query}')">
+                <span class="material-symbols-outlined">add</span>#${query} 새 태그 추가</div>` 
+                : `<div class="kw-dropdown-empty">저장된 태그가 없습니다.</div>`;
+        } else {
+            html = filtered.map(t=>`
+                <div class="kw-dropdown-item ${tagInputChips.includes(t)?'selected':''}" onclick="addTagInput('${t}')">#${t}</div>
+            `).join('');
+            if(query && !filtered.includes(query)){
+                html += `<div class="kw-dropdown-item" onclick="addTagInput('${query}')">
+                    <span class="material-symbols-outlined">add</span>#${query} 새 태그 추가</div>`;
+            }
+        }
+        dropdown.innerHTML = html;
+    }
+
+    // 외부 클릭 시 드롭다운 닫기
+    document.addEventListener('click', e=>{
+        const wrap = document.getElementById('tagInputWrap');
+        if(wrap && !wrap.contains(e.target)) {
+            document.getElementById('tagDropdown').classList.remove('show');
+        }
+    });
+
+    // 태그 저장
+    function saveChapterTags(){
+        // 입력창 태그화
+        const raw = document.getElementById('tagRawInput').value.trim();
+        if(raw) tagInputChips.push(raw.replace(/^#/,'').replace(/,/g,''));
+
+        const bookId  = document.getElementById('tagBook').value;
+        const chapter = document.getElementById('tagChapter').value;
+        const book    = getBook(bookId);
+        if(!book) return;
+        
+        const key     = `${book.name}_${chapter}`;
+        const data    = getChapterTags();
+        
+        const finalChapterTags = [...new Set(tagInputChips)]; // 중복 제거
+
+        if(finalChapterTags.length === 0){
+            delete data[key]; // 태그 없으면 키 삭제
+        } else {
+            data[key] = finalChapterTags;
+        }
+        
+        saveChapterTagsData(data);
+        renderTagList(); // 리스트 갱신
+        showToast('🏷️ 장별 태그가 저장되었습니다.');
+        
+        // 입력창 정리
+        document.getElementById('tagRawInput').value = "";
+        tagInputChips = finalChapterTags; // 정리된걸로 교체
+        renderTagInputChips();
+    }
+
+    // 태그 모아보기 리스트 렌더링 (디자인 적용)
+    function renderTagList(){
+        const data    = getChapterTags();
+        const display = document.getElementById('tagListDisplay');
+        const filterEl= document.getElementById('tagFilterBadges');
+
+        // 1. 전체 고유 태그 -> 필터 칩 렌더링
+        const allTagsSet = new Set();
+        Object.values(data).forEach(arr=>arr.forEach(t=>allTagsSet.add(t)));
+        const allTags = [...allTagsSet].sort(); // 정렬
+
+        if(allTags.length===0){
+            filterEl.innerHTML = `<span style="font-size:0.8rem;color:var(--text-faint); padding: 5px 0;">없음</span>`;
+        } else {
+            filterEl.innerHTML = allTags.map(t=>`
+                <span class="badge ${activeTagFilter===t?'active':''}" onclick="toggleTagFilter('${t}')">#${t}</span>
+            `).join('');
+        }
+
+        // 2. 태그 달린 장 목록 렌더링
+        // 태그 있는 엔트리만 추출
+        const entries = Object.entries(data).filter(([k,arr])=>arr.length>0);
+        
+        if(entries.length===0){
+            display.innerHTML=`<div class="empty-state">
+                <span class="material-symbols-outlined">sell</span>
+                <div>아직 등록된 태그가 없습니다.</div>
+                <div style="font-size:0.85rem; margin-top:5px;">위에서 성경 장별로 태그를 달아보세요.</div>
+            </div>`;
+            return;
+        }
+
+        // 필터링 적용
+        const filtered = activeTagFilter
+            ? entries.filter(([k,arr])=>arr.includes(activeTagFilter))
+            : entries;
+
+        if(filtered.length===0){
+            display.innerHTML=`<div class="empty-state">
+                <span class="material-symbols-outlined">label_off</span>
+                <div>#${activeTagFilter} 태그가 달린 장이 없습니다.</div>
+            </div>`;
+            return;
+        }
+        
+        // [UX 개선] 성경 순서대로 정렬 로직 추가 가능 (여기선 그냥 key순)
+
+        // 장별 태그 카드 렌더링
+        display.innerHTML = filtered.map(([key, tags])=>{
+            const [bookName, chapter] = key.split('_');
+            return `
+                <div class="chapter-tag-card">
+                    <div class="chapter-tag-ref">
+                        <span class="material-symbols-outlined">auto_stories</span>
+                        ${bookName} ${chapter}장
+                    </div>
+                    <div class="chapter-tag-badges">
+                        ${tags.map(t=>`<span class="chapter-tag-badge" onclick="toggleTagFilter('${t}')">#${t}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function toggleTagFilter(t){
+        activeTagFilter = activeTagFilter===t ? null : t;
+        renderTagList();
+        
+        // [UX] 필터 선택 시 상단 칩 영역으로 스크롤
+        if(activeTagFilter) document.getElementById('tagFilterBadges').scrollIntoView({behavior: 'smooth', block: 'start'});
+    }
+
+    // [핵심 연동] 성경 열람 탭에서도 해당 장의 태그 표시하기
+    // loadBibleVerses 함수 끝단에서 호출됨
+    function displayChapterTagsInReader(bookName, chapter){
+        const data = getChapterTags();
+        const key = `${bookName}_${chapter}`;
+        const tags = data[key] || [];
+        
+        let tagArea = document.getElementById('chapterTagDisplayInReader');
+        
+        // 영역이 없으면 viewer 위에 생성
+        if(!tagArea){
+            tagArea = document.createElement('div');
+            tagArea.id = 'chapterTagDisplayInReader';
+            tagArea.style.cssText = 'margin-top:12px; margin-bottom:-4px; display:flex; flex-wrap:wrap; gap:8px; padding:0 4px;';
+            const viewer = document.getElementById('bibleViewer');
+            viewer.parentNode.insertBefore(tagArea, viewer);
+        }
+        
+        if(tags.length > 0){
+            tagArea.innerHTML = tags.map(t=>`<span class="chapter-tag-badge" style="cursor:default; font-size:0.75rem; padding: 3px 10px;">#${t}</span>`).join('');
+            tagArea.style.display = 'flex';
+        } else {
+            tagArea.innerHTML = '';
+            tagArea.style.display = 'none';
+        }
+    }
+
+
+    // ─── 초기화 (onload) ───
+    window.onload=()=>{
+        // 셀렉트 박스 초기화
+        populateBookSelect('readBook',otBooks); 
+        populateBookSelect('cardBook',otBooks);
+        populateBookSelect('tagBook',otBooks);
+        
+        updateChapters('readBook','readChapter'); 
+        updateChapters('cardBook','cardChapter');
+        updateChapters('tagBook','tagChapter');
+        
+        // 초기 본문 로드
+        loadBibleVerses();
+        
+        // 초안 확인
+        checkDraftIndicator();
+    };
+    
+</script>
+
+</body>
+</html>
